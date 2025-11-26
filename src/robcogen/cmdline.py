@@ -1,0 +1,61 @@
+import logging, argparse
+
+import rmt.rmt as rmtool
+import kgprim.ct
+import ctgen
+import ctgen_backends.octave
+import ctgen_backends.cpp_iitrbd
+
+import robcogen.core
+import robcogen.config
+import robcogen.cpp.config
+import robmodel
+
+logger = logging.getLogger(__package__)
+
+def cfgLogging(level):
+    formatter = logging.Formatter('%(levelname)s (%(name)s) : %(message)s')
+    handler = logging.StreamHandler()
+    handler.setFormatter(formatter)
+
+    loggers = [logger,
+        logging.getLogger(kgprim.ct.__package__),
+        logging.getLogger(robmodel.__package__),
+        logging.getLogger(ctgen.__package__),
+        logging.getLogger(ctgen_backends.octave.__package__),
+        logging.getLogger(ctgen_backends.cpp_iitrbd.__package__)
+    ]
+
+    for log in loggers :
+        log.setLevel(level)
+        log.addHandler(handler)
+
+def main():
+
+    argparser = argparse.ArgumentParser(prog='rcg', description='The Robotics Code Generator')
+    argparser.add_argument('-v', '--verbose', dest='verbose', action='store_true', help='lower the logging level to DEBUG (default is WARN)')
+    argparser.add_argument('-o', '--output', dest='output', metavar='DIR', help='base output path (defaults to {defa})'.format(defa=robcogen.config.default_config["outdir"]))
+
+    argparser.add_argument('-fb', '--floating-base', dest='floating', action='store_true', help='Consider the robot as having a floating underactuated base')
+
+    argparser.add_argument('--cpp',    dest='cpp',   action='store_true', help='generate C++ code')
+    argparser.add_argument('--octave', dest='octave',action='store_true', help='generate octave code')
+
+    rmtool.setRobotArgs(argparser)
+
+    cppgroup = argparser.add_argument_group('C++')
+    robcogen.cpp.config.add_cmdline_opts(cppgroup)
+
+    args = argparser.parse_args()
+
+    cfgLogging(logging.DEBUG if args.verbose else logging.WARNING)
+
+    connectivity, tree, frames, geometry, inertia, params = rmtool.getmodels(args.robot, args.params, floatLiteralsAsConstants=True)[0:6]
+    configurator = robcogen.config.Configurator(args)
+    core = robcogen.core.Generator(configurator, geometry, inertia, None)
+
+    if args.cpp:
+        core.generateCPP()
+    if args.octave:
+        core.generateOctave()
+

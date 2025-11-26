@@ -1,0 +1,199 @@
+import os
+from types import SimpleNamespace as DictDot
+
+import ctgen_backends.cpp_iitrbd as ctcppgen
+import ctgen_backends.cpp_iitrbd.generator
+import ctgen_backends.cpp_iitrbd.config
+
+from robmodel.connectivity import JointKind as JointKind
+
+import robcogen.luabridge as lua
+import robcogen.constants
+import robcogen.vpc
+
+
+def add_cmdline_opts(args):
+    args.add_argument('--template', dest='templateAll', action='store_true', help='template everything on the scalar type')
+
+_lua_config_file_path = os.path.join( os.path.dirname(__file__), 'config.lua')
+
+class Configurator:
+    def __init__(self, cmdline_args, robot):
+        self.robot = robot
+        luaCodeSrc = open( _lua_config_file_path, "r")
+        self.txtCfg = lua.lua_runtime.execute(luaCodeSrc.read())
+        luaCodeSrc.close()
+
+        self.template = cmdline_args.templateAll or False
+
+        def spatialVectorIndex(joint):
+            if joint.kind == JointKind.prismatic :
+                return 'LZ'
+            elif joint.kind == JointKind.revolute :
+                return 'AZ'
+            else :
+                raise RuntimeError("Unknow joint type " + joint.kind)
+
+        iitrbd = DictDot(
+            namespace = ['iit', 'rbd'],
+            spatialVectorIndex = spatialVectorIndex
+        )
+
+        files = DictDot(
+            h_main  = 'declarations',
+            h_types = 'rbd_types',
+            h_traits= 'traits',
+            h_transforms = 'transforms',
+            h_constants = 'constants',
+            h_inertia = 'inertia_properties',
+            h_fwd_dyn = 'forward_dynamics',
+            h_inv_dyn = 'inverse_dynamics',
+            tpl_test = 'tpl_test',
+            test_cmdline_id = 'test_id',
+            test_consistency = 'test_consistency',
+        )
+
+        self.data = DictDot(
+            outDir = 'cpp',
+            files = files,
+            iitrbd = iitrbd,
+            constantFolding = False
+        )
+
+
+        self.transformsContainerMeta = DictDot(
+            class_name =  self.txtCfg.classes.transforms,
+
+            members = DictDot(
+                transform = lambda tfMetadata : 'm_' + tfMetadata.name,
+                update_params = 'updateParams',
+                update = 'update',
+                parameters = 'parameters'
+            )
+        )
+
+    @property
+    def files(self):
+        return self.data.files
+
+    @property
+    def constantFolding(self):
+        return self.data.constantFolding
+
+    def symbolicExpressionToCode(self, symb_expr, replacements):
+        return robcogen.vpc.symbolicExpressionToCode(symb_expr, replacements)
+
+    def templateAll(self): return self.template
+
+    def headerFileName(self, base_name) :
+        return base_name + '.h'
+
+    def implFileName(self, base_name) :
+        if self.templateAll() :
+            return base_name + '.cpp.h'
+        else :
+            return base_name + '.cpp'
+
+
+
+class CTGenConfigurator(ctcppgen.config.Configurator):
+    def __init__(self, robotKinematics, mainConfigurator, ctModel):
+        super().__init__(ctModel)
+
+        self.robotKinematics = robotKinematics
+        self.mainConfigurator = mainConfigurator
+
+        # Customize the configuration of the Lua generators in the
+        # ct-gen package.
+        # First, get the default configuration
+        ctgen_lua_cfg = super().getTextGeneratorsConfiguration()
+
+        # Load the local Lua configuration, which we will use to override some
+        # of the defaults of the ct-gen configuration.
+        # Note that we must use the ct-gen Lua runtime, as Lua objects from
+        # different runtimes cannot interoperate (see Lupa docs).
+        luaCfgFile = open( _lua_config_file_path, "r")
+        local_lua_cfg = ctcppgen.luaRuntime.execute(luaCfgFile.read())
+        luaCfgFile.close()
+
+        jointState_t = local_lua_cfg.types.jointState
+        if mainConfigurator.templateAll() :
+        # Constrain the scalar type used internally by the transforms code.
+        # Normally, this would not be necessary, as this is a type defined
+        # within the transforms class for internal use. However, there is a
+        # corner case. We want to configure the variables-status type to be the
+        # joint-status type. In the case of templates, this type must have the
+        # suffix `<Scalar>`, where 'Scalar' must be the typename valid within
+        # the context of the transforms code. By forcing it to be a string that
+        # we know, we can also construct the correct string for the joint status
+        # type.
+            ctgen_lua_cfg.internal.scalar_t = local_lua_cfg.types.scalar
+            ctgen_scalar_t = ctgen_lua_cfg.internal.scalar_t
+            jointState_t = jointState_t + '<' + ctgen_scalar_t + '>'
+
+        ctgen_lua_cfg.variables.status_type = jointState_t
+
+        ctgen_lua_cfg.constants.generate_local_defs        = False
+        ctgen_lua_cfg.variables.generate_local_status_type = False
+
+        def jointStateAccess(variable):
+            joint = robotKinematics.symVarToJoint[variable]
+            idx   = mainConfigurator.robot.jointNum(joint)
+            return local_lua_cfg.ids.jointStateFormalParameter + "(" + str(idx-1) + ")"
+        ctgen_lua_cfg.variables.status_formal_parameter = local_lua_cfg.ids.jointStateFormalParameter
+        ctgen_lua_cfg.variables.value_expression = jointStateAccess
+
+        ctgen_lua_cfg.scalar_traits.generate_local_def = False
+        ctgen_lua_cfg.scalar_traits.use_default        = False
+        ctgen_lua_cfg.scalar_traits.type_name = 'iit::rbd::ScalarTraits'
+
+        desired = mainConfigurator.transformsContainerMeta
+        current = ctgen_lua_cfg.container_class
+        current.generate_it = True
+        current.class_name = lambda _ : desired.class_name
+        current.members.transform    = desired.members.transform
+        current.members.update_params= desired.members.update_params
+        current.members.update       = desired.members.update
+        current.members.parameters   = desired.members.parameters
+
+        #ctgen_lua_cfg.constants.value_expression =\
+        #lambda constant : mainConfigurator.txtCfg.classes.constants + '::' + constant.name
+
+        # The namespace configuration for the generators in the
+        # `ctgen_backends.cpp_iitrbd` package, is a function taking the
+        # transforms model object. In this case, we want to force the
+        # locally configured namespaces, regardless of the transforms
+        # model. To ensure compatibility, use a lambda that takes a
+        #  dummy argument, so that the ctgen generator will not complain.
+        ns = local_lua_cfg.namespaces(mainConfigurator.robot)
+        ctgen_lua_cfg.namespaces = lambda _ : ns
+
+        files = mainConfigurator.files
+        include_files = [files.h_types, files.h_main, files.h_constants]
+        includes = ['"{name}.h"'.format(name=file) for file in include_files]
+        ctgen_lua_cfg.external.includes = ctcppgen.luaRuntime.table_from(includes)
+
+        ctgen_lua_cfg.files.include_dirs = lambda _ : ctcppgen.luaRuntime.table_from([])
+
+        self.ctgen_text_generators_configuration = ctgen_lua_cfg
+
+    # @override
+    def getTextGeneratorsConfiguration(self):
+        return self.ctgen_text_generators_configuration
+
+    # @override
+    def generateTemplates(self):
+        return self.mainConfigurator.templateAll()
+
+    # @override
+    def getOutputFileNames(self):
+        basename = self.mainConfigurator.files.h_transforms
+
+        return DictDot(
+            header_file = self.mainConfigurator.headerFileName(basename),
+            implementation_file = self.mainConfigurator.implFileName(basename),
+            include_path = ''
+        )
+
+
+

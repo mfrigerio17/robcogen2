@@ -1,0 +1,31 @@
+[project]
+
+name        = "robcogen2"
+version     = "0.1.0"
+description = "Code generator for articulated robot dynamics"
+authors     = [
+    { name = "Marco Frigerio", email = "mfgit.6uvfu@passinbox.com" }
+]
+
+license = "BSD-3-Clause"
+readme = "readme.md"
+
+requires-python = ">=3.7"
+
+dependencies = [
+    "kgprim >= 0.1.1",
+    "robot-model-tools >= 0.2.0",
+    "ctgen >= 0.2.0",
+    "lupa >= 2.1",
+]
+
+urls = { home= "https://github.com/mfrigerio17/rcg2" }
+
+
+[project.scripts]
+rcg = "robcogen.cmdline:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+

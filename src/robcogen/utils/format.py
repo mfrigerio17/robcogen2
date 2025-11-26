@@ -1,0 +1,32 @@
+import math
+
+class FloatsFormatter :
+    def __init__(self, round_digits=6, pi_round_digits=5, pi_string="pi"):
+        self.round_decimals = round_digits
+        self.pi_round_decimals = pi_round_digits
+        self.pi_string = pi_string
+
+        self.roundedPI     = round(math.pi,   self.pi_round_decimals)
+        self.roundedHalfPI = round(math.pi/2, self.pi_round_decimals)
+
+        self.formatStr = ':.' + str(self.round_decimals) + 'f'
+
+    def float2str(self, num, angle=False ) :
+        if angle :
+            value = round(num, self.pi_round_decimals)
+            sign  = "-" if value<0 else ""
+            if abs(value) == self.roundedPI :
+                return sign + self.pi_string
+            if abs(value) == self.roundedHalfPI :
+                return sign + self.pi_string + "/2.0"
+
+        num = round(num, self.round_decimals)
+        num += 0  # this trick avoids the annoying '-0.0' (minus zero)
+
+        # 'rstrip' removes trailing zeros, if any.
+        ret = ("{" + self.formatStr + "}" ).format( num ).rstrip('0')
+        # but I do want at least one of them, for integers, so that it will
+        #  always look like a float also to limited parsers ('N.' --> 'N.0')
+        if ret.endswith('.'):
+            ret = ret + '0'
+        return ret
