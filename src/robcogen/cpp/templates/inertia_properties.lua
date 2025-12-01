@@ -1,27 +1,3 @@
-local genutils  = RCG.utils.templates
-
-local function meta(robot, configurator, env)
-    return {
-        inertia_properties = {
-            class = 'InertiaProperties', --TODO read from config
-            members = {
-                tensorGetter = function(link) return 'getTensor_'..link.name end,
-                comGetter    = function(link) return 'getCOM_'..link.name end,
-                massGetter   = function(link) return 'getMass_'..link.name end,
-                paramsUpdate = 'updateParameters',
-                parameters   = 'parameters'
-            }
-        },
-        inertia_parameters = {
-            class = 'RuntimeInertiaParams',
-            members = {
-                pvalue = function(param) return param.name end
-            }
-        }
-    }
-end
-
-
 local header = [[
 #ifndef «include_guard»
 #define «include_guard»
@@ -196,27 +172,14 @@ void «qualifier»::«NAMES.members.paramsUpdate»(const «meta.inertia_paramete
 ]]
 
 
-
-
-local function inertia_generators(robot, configurator, given_env)
-
+local function generators_inertia_properties(robot, configurator, given_env)
     -- shallow copy the template environment
     local env = {}
     for k,v in pairs(given_env) do
         env[k] = v
     end
-    -- add required fields for the templates evaluation
-    local parameters = {}
-    for p,v in python.iter(robot.inertia.parameters) do
-        table.insert(parameters, p)
-    end
-    env.links = robot.movingLinks
-    env.meta  = meta(robot, configurator, env)
-    env.parameters = parameters
-    env.include_guard = env.includeGuard(configurator.files.h_inertia)
-    env.sorted_links = function(robot) return given_env.sorted_links(robot, "include_base_if_floating") end
 
-    env.field_value = function( expr )
+    local field_value = function( expr )
         if type(expr) == 'number' then
             return expr
         end
@@ -234,36 +197,38 @@ local function inertia_generators(robot, configurator, given_env)
         return configurator.symbolicExpressionToCode(expr.expr, replacements )
     end
 
-    env.tpl_help = env.common.scalarTpl( env.meta.inertia_properties.class, env.templateAll )
-
-    --- The generator of the source file
-    local function sourcegen()
-        local function tensor_expression(ip)
-            local ixx = env.field_value(ip.moments.ixx)
-            local ixy = env.field_value(ip.moments.ixy)
-            local ixz = env.field_value(ip.moments.ixz)
-            local iyy = env.field_value(ip.moments.iyy)
-            local iyz = env.field_value(ip.moments.iyz)
-            local izz = env.field_value(ip.moments.izz)
-            return env.ns_iit_rbd.qualifier..'::Utils::buildInertiaTensor<'..
-                  env.types.scalar..
-            '>('..ixx..','..iyy..','..izz..','..ixy..','..ixz..','..iyz..')'
-        end
-
-        env.tensor_expression = tensor_expression
-        return genutils.tpl_eval(source, env)
+    local tensor_expression = function (ip)
+        local ixx = field_value(ip.moments.ixx)
+        local ixy = field_value(ip.moments.ixy)
+        local ixz = field_value(ip.moments.ixz)
+        local iyy = field_value(ip.moments.iyy)
+        local iyz = field_value(ip.moments.iyz)
+        local izz = field_value(ip.moments.izz)
+        return env.ns_iit_rbd.qualifier..'::Utils::buildInertiaTensor<'..
+              env.types.scalar..
+        '>('..ixx..','..iyy..','..izz..','..ixy..','..ixz..','..iyz..')'
     end
 
+    -- additional fields for the evaluation environment
+    env.parameters = {}
+    for p,v in python.iter(robot.inertia.parameters) do
+        table.insert(env.parameters, p)
+    end
+    env.inertial_data = robot.inertia.actual_data
+    env.include_guard = env.includeGuard(configurator.files.h_inertia)
+    env.sorted_links  = function(robot) return given_env.sorted_links(robot, "include_base_if_floating") end
+    env.tpl_help = env.common.scalarTpl( env.meta.inertia_properties.class, env.templateAll )
+    env.field_value = field_value
+    env.tensor_expression = tensor_expression
+
     return {
-        header = function() return genutils.tpl_eval(header, env) end,
-        source = sourcegen
+        header = function() return RCG.utils.templates.tpl_eval(header, env) end,
+        source = function() return RCG.utils.templates.tpl_eval(source, env) end,
     }
 
 end
 
 
-generators.inertia = {
-    generators = inertia_generators,
-    meta = meta
-}
+return generators_inertia_properties
+
 

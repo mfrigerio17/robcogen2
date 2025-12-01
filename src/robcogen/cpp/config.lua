@@ -55,6 +55,25 @@ local config =
         incPath = function(robot) return robot.name:lower() .. '/rcg2/' end
     },
 
+    meta = {
+        inertia_properties = {
+            class = 'InertiaProperties',
+            members = {
+                tensorGetter = function(link) return 'getTensor_'..link.name end,
+                comGetter    = function(link) return 'getCOM_'..link.name end,
+                massGetter   = function(link) return 'getMass_'..link.name end,
+                paramsUpdate = 'updateParameters',
+                parameters   = 'parameters'
+            }
+        },
+        inertia_parameters = {
+            class = 'RuntimeInertiaParams',
+            members = {
+                pvalue = function(param) return param.name end
+            }
+        },
+    },
+
     internal = {
         typesMacro = 'RCG_COMMON_TYPES_ALIASES',
         includeGuard = function(robot)

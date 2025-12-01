@@ -38,7 +38,7 @@ local function class_code_meta(robot, configurator, env)
             fext = types.externalForces,
         },
         other_classes = {
-            inertia    = GLOB.inertia.meta(robot, configurator, env).inertia_properties,
+            inertia    = env.meta.inertia_properties,
             transforms = {
                 class = env.common.transformsContainerMeta.class_name,
                 members = env.common.transformsContainerMeta.members,

@@ -49,6 +49,8 @@ local function generator_tests(robot, configurator, env)
     }
 end
 
+
+
 local function allGenerators(robot, transforms, configurator)
     local config    = configurator.txtCfg
     local cfgdata   = configurator.data
@@ -60,7 +62,6 @@ local function allGenerators(robot, transforms, configurator)
 
     local env = {
         robot = robot,
-        inertial_data = robot.inertia.actual_data, -- for the inertia properties
         vars = config.vars,
         mxops = config.mxops,
         ns = ns,
@@ -68,6 +69,7 @@ local function allGenerators(robot, transforms, configurator)
         types   = config.types,
         classes = config.classes,
         opts    = config.opts,
+        meta    = config.meta,
         common = common(robot, transforms, configurator),
         utils = genutils,
         iterutils = iterutils, -- TODO: remove - the iterators should be in this env
@@ -107,7 +109,7 @@ local function allGenerators(robot, transforms, configurator)
         common    = env.common, -- to let the caller inject something, possibly
         headers   = generators.headers(robot, configurator, env),
         constants = generators.constants(robot, configurator, env),
-        inertia   = generators.inertia.generators(robot, configurator, env),
+        inertia   = RCG.cpp.generators.inertia_properties(robot, configurator, env),
         --fd        = generators.fd.generators(robot, configurator, env),
         id        = generators.id.generators(robot, configurator, env),
         cmake     = generators.cmake(robot, configurator, env),
