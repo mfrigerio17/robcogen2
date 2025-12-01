@@ -107,7 +107,7 @@ local function allGenerators(robot, transforms, configurator)
 
     local ret = {
         common    = env.common, -- to let the caller inject something, possibly
-        headers   = generators.headers(robot, configurator, env),
+        headers   = RCG.cpp.generators.core_headers(robot, configurator, env),
         constants = generators.constants(robot, configurator, env),
         inertia   = RCG.cpp.generators.inertia_properties(robot, configurator, env),
         --fd        = generators.fd.generators(robot, configurator, env),

@@ -35,7 +35,6 @@ class Generator:
         lua.lua_runtime.execute('generators = {}') # prepare a global
         self._loadLuaModule('utils.lua')
         self._loadLuaModule('common.lua')
-        self._loadLuaModule('tpl_core_headers.lua')
         self._loadLuaModule('tpl_constants.lua') # also defines the function to generate the reference to a constant
         #self._loadLuaModule('tpl_fwd_dyn.lua')
         self._loadLuaModule('tpl_inv_dyn.lua')

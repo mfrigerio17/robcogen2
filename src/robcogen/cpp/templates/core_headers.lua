@@ -1,6 +1,3 @@
--- Use a local alias for the expected global modules
-local genutils  = RCG.utils.templates
-
 
 local types = [[
 #ifndef «include_guard»
@@ -24,7 +21,8 @@ using TypesGen = «rbdns»::Core«tpl.suffix»;
 template<typename «tpl.scalar_t», int R, int C>
 using Matrix = typename «rbdns»::PlainMatrix<«tpl.scalar_t», R, C>;
 
-#define «typesMacro» using Force        = typename TypesGen«tpl.suffix»::ForceVector;    \
+#define «typesMacro» \
+using Force        = typename TypesGen«tpl.suffix»::ForceVector;    \
 using Velocity     = typename TypesGen«tpl.suffix»::VelocityVector; \
 using Acceleration = typename TypesGen«tpl.suffix»::VelocityVector; \
 using Matrix66     = typename TypesGen«tpl.suffix»::Matrix66;       \
@@ -96,11 +94,11 @@ enum «types.linkIDs» {
     «linkIDs»
 };
 
-static const «types.jointIDs» orderedJointIDs[jointsCount] = {
+static constexpr const «types.jointIDs» orderedJointIDs[jointsCount] = {
     «jointIDs»
 };
 
-static const «types.linkIDs» orderedLinkIDs[linksCount] = {
+static constexpr const «types.linkIDs» orderedLinkIDs[linksCount] = {
     «linkIDs»
 };
 
@@ -111,52 +109,54 @@ ${ns.close}
 
 
 local traits = [[
+@local tpl = common.scalarTpl("Traits")
 #ifndef «include_guard»
 #define «include_guard»
 
-#include "«Names$Files::mainHeader(robot)».h"
-#include "«Names$Files::transformsHeader(robot)».h"
-#include "«Names$Files$RBD::invDynHeader(robot)».h"
-#include "«Names$Files$RBD::fwdDynHeader(robot)».h"
-#include "«Names$Files$RBD::jsimHeader(robot)».h"
-#include "«Names$Files$RBD::inertiaHeader(robot)».h"
+#include "«headers.main»"
+#include "«headers.types»"
+#include "«headers.inertia»"
+#include "«headers.transforms»"
+//#include "«headers.fwd_dyn»"
+#include "«headers.inv_dyn»"
+#include "data_map.h"
 
-«Common.enclosingNamespacesOpen(robot)»
-«val ns  = Common.enclosingNamespacesQualifier(robot)»
-struct Traits {
-    typedef typename «ns»::«Names$Types::scalarTraits» «Names$Types::scalarTraits»;
+${ns.open}
 
-    typedef typename «ns»::«Names$Types::jointState» «Names$Types::jointState»;
+«tpl.heading»
+struct Traits
+{
+    using «types.scalarTraits» = «ns.qualifier»::«types.scalarTraits»«tpl.suffix»;
+    using «types.jointState» = «ns.qualifier»::«types.jointState»«tpl.suffix»;
 
-    typedef typename «ns»::JointIdentifiers JointID;
-    typedef typename «ns»::LinkIdentifiers  LinkID;
+    using JointID = «ns.qualifier»::«types.jointIDs»;
+    using LinkID  = «ns.qualifier»::«types.linkIDs»;
 
-    typedef typename «ns»::«Names$Types$Transforms::homogeneous» «Names$Types$Transforms::homogeneous»;
-    typedef typename «ns»::«Names$Types$Transforms::spatial_motion» «Names$Types$Transforms::spatial_motion»;
-    typedef typename «ns»::«Names$Types$Transforms::spatial_force» «Names$Types$Transforms::spatial_force»;
+    static constexpr int joints_count{«ns.qualifier»::jointsCount};
+    static constexpr int links_count{«ns.qualifier»::linksCount};
+    static constexpr bool floating_base{«robot.isFloatingBase»};
+@if templateAll then
+    using ExtForces = ::rcg2::DataMap<typename TypesGen«tpl.suffix»::ForceVector, linksCount, LinkID>;
+@else
+    using ExtForces = ::rcg2::DataMap<Force, linksCount, LinkID>;
+@end
+    using Transforms =  typename «ns.qualifier»::«classes.transforms»«tpl.suffix»;
 
-    typedef typename «ns»::«LinkInertias::className(robot)» InertiaProperties;
-    typedef typename «ns»::«ForwardDynamics::className(robot)» FwdDynEngine;
-    typedef typename «ns»::«InverseDynamics::className(robot)» InvDynEngine;
-    typedef typename «ns»::«Names$Types::jspaceMLocal» JSIM;
+    using InertiaProperties = typename «ns.qualifier»::InertiaProperties«tpl.suffix»;
+    //typedef typename «ns.qualifier»::ForwardDynamics FwdDynEngine;
+    using InvDynEngine = typename «ns.qualifier»::InverseDynamics«tpl.suffix»;
+    //typedef typename JSIM JSIM; // TODO
 
-    static const int joints_count = «ns»::jointsCount;
-    static const int links_count  = «ns»::linksCount;
-    static const bool floating_base = «IF common.isFloating(robot.base)»true«ELSE»false«ENDIF»;
-
-    static inline const JointID* orderedJointIDs();
-    static inline const LinkID*  orderedLinkIDs();
+    static inline constexpr const JointID* orderedJointIDs() {
+        return «ns.qualifier»::orderedJointIDs;
+    }
+    static inline constexpr const LinkID*  orderedLinkIDs() {
+        return «ns.qualifier»::orderedLinkIDs;
+    }
 };
 
 
-inline const Traits::JointID*  Traits::orderedJointIDs() {
-    return «ns»::orderedJointIDs;
-}
-inline const Traits::LinkID*  Traits::orderedLinkIDs() {
-    return «ns»::orderedLinkIDs;
-}
-
-«Common::enclosingNamespacesClose(robot)»
+${ns.close}
 
 #endif
 ]]
@@ -164,23 +164,23 @@ inline const Traits::LinkID*  Traits::orderedLinkIDs() {
 
 
 
-local function allGenerators(robot, configurator, env)
-
+local function generators_core_headers(robot, configurator, env)
+    local tpl_eval = RCG.utils.templates.tpl_eval
     env.types_core_header = configurator.files.h_types
 
     local function gen_types_header()
         env.include_guard = env.includeGuard(configurator.files.h_types)
-        return genutils.tpl_eval(types, env)
+        return tpl_eval(types, env)
     end
 
     local function gen_main_header()
         env.include_guard = env.includeGuard(configurator.files.h_main)
-        return genutils.tpl_eval(main, env)
+        return tpl_eval(main, env)
     end
 
     local function gen_traits()
         env.include_guard = env.includeGuard(configurator.files.h_traits)
-        return genutils.tpl_eval(RCG.cpp.templates.traits, env)
+        return tpl_eval(traits, env)
     end
 
     return {
@@ -190,5 +190,5 @@ local function allGenerators(robot, configurator, env)
     }
 end
 
-generators.headers = allGenerators
+return generators_core_headers
 
