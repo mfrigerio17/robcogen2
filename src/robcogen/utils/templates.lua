@@ -1,9 +1,9 @@
 local tplengine = require('template-text')
 
-local function tpleval(text, env, opts)
+local function tpleval(text, env, opts, included)
     local options = opts or {}
     options.xtendStyle = true
-    local ok, ret = tplengine.tload(text, options, env)
+    local ok, ret = tplengine.tload(text, options, env, included)
     if not ok then
         -- TODO use some kind of logging?
         error("Error while loading a text template: " .. table.concat(ret, "\n"), 2)
