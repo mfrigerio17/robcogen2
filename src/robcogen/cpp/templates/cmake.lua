@@ -57,6 +57,11 @@ install(TARGETS ${LIB_NAME} LIBRARY DESTINATION lib)
 install(FILES ${HEADERS} DESTINATION include/«incpath»)
 
 
+# The playground main()
+add_executable(playground «impl_files.playground»)
+target_link_libraries(playground ${LIB_NAME})
+
+
 # Tests
 add_executable(test-id    tests/«impl_files.test_cmdline_id»)
 add_executable(test-cons  tests/«impl_files.test_consistency»)

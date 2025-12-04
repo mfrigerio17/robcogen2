@@ -93,9 +93,8 @@ class Generator:
         ok, text = self.generators.constants.source()
         self._genFile(ok, text, self.configurator.implFileName(basename) )
 
-        if self.configurator.templateAll() :
-            ok, text = self.generators.tpl_test()
-            self._genFile(ok, text, self.configurator.files.tpl_test + '.cpp')
+        ok, text = self.generators.playground.source()
+        self._genFile(ok, text, self.configurator.files.playground + '.cpp')
 
         fname = "data_map.h"
         path = _path_here / "static" / fname

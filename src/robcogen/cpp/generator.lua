@@ -16,31 +16,6 @@ local iterutils = RCG.utils.iters
 local generators= generators -- this is the global tab where the various Lua files are storing the local generators
 
 
-local function tpl_test_code(env)
-    local tpl = [[
-#include <iostream>
-
-#include "«headers.main»"
-#include "«headers.types»"
-#include "«headers.constants»"
-#include "«headers.transforms»"
-#include "«headers.inertia»"
-#include "«headers.fwd_dyn»"
-
-using namespace std;
-using namespace «ns.qualifier»;
-
-int main()
-{
-    «classes.transforms»<double> tf;
-    return 0;
-}
-]]
-    return function()
-        return genutils.tpl_eval(tpl, env)
-    end
-end
-
 
 local function allGenerators(robot, transforms, configurator)
     local config    = configurator.txtCfg
@@ -84,7 +59,7 @@ local function allGenerators(robot, transforms, configurator)
             inertia   = impl_file_name(configurator.files.h_inertia),
             inv_dyn   = impl_file_name(configurator.files.h_inv_dyn),
             fwd_dyn   = impl_file_name(configurator.files.h_fwd_dyn),
-            tpl_test  = configurator.files.tpl_test .. '.cpp',
+            playground= configurator.files.playground .. '.cpp',
             test_cmdline_id = configurator.files.test_cmdline_id .. '.cpp',
             test_consistency = configurator.files.test_consistency .. '.cpp',
         },
@@ -104,8 +79,8 @@ local function allGenerators(robot, transforms, configurator)
         --fd        = generators.fd.generators(robot, configurator, env),
         id        = RCG.cpp.generators.inverse_dynamics(robot, configurator, env),
         cmake     = RCG.cpp.generators.cmake(robot, configurator, env),
-        --tpl_test  = tpl_test_code(env),
         tests     = RCG.cpp.generators.tests(robot, configurator, env),
+        playground= RCG.cpp.generators.playground(robot, configurator, env),
     }
 
     return ret
