@@ -23,7 +23,6 @@ local config =
     },
     classes = {
         coreTypes = 'CoreTypes', -- used only when templating-everything
-        constants = 'ModelConstants',
         transforms= 'Transforms'
     },
     vars = {
@@ -46,7 +45,6 @@ local config =
     },
 
     opts = {
-        use_constexpr = false,
         template_all = false,
     },
 
@@ -56,6 +54,10 @@ local config =
     },
 
     meta = {
+        constants = {
+            class = 'ModelConstants',
+            use_constexpr = true, -- default, works for trivial scalar types
+        },
         inertia_properties = {
             class = 'InertiaProperties',
             members = {

@@ -5,6 +5,7 @@ local function load_templates_modules(path)
         },
         generators = {
             core_headers       = loadfile(path .. "/core_headers.lua") (),
+            constants          = loadfile(path .. "/constants.lua") (),
             inertia_properties = loadfile(path .. "/inertia_properties.lua") (),
         },
     }

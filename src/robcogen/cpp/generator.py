@@ -35,7 +35,6 @@ class Generator:
         lua.lua_runtime.execute('generators = {}') # prepare a global
         self._loadLuaModule('utils.lua')
         self._loadLuaModule('common.lua')
-        self._loadLuaModule('tpl_constants.lua') # also defines the function to generate the reference to a constant
         #self._loadLuaModule('tpl_fwd_dyn.lua')
         self._loadLuaModule('tpl_inv_dyn.lua')
         self._loadLuaModule('tpl_cmake.lua')
@@ -48,7 +47,7 @@ class Generator:
 
 
     def _getConstantValueExprGenerator(self):
-        mc = self.configurator.txtCfg.classes.constants
+        mc = self.configurator.txtCfg.meta.constants["class"]
         scalar_t = self.configurator.txtCfg.types.scalar
 
         getter = None
@@ -93,7 +92,7 @@ class Generator:
         basename = self.configurator.files.h_constants
         ok, text = self.generators.constants.header()
         self._genFile(ok, text, self.configurator.headerFileName(basename) )
-        ok, text = self.generators.constants.impl()
+        ok, text = self.generators.constants.source()
         self._genFile(ok, text, self.configurator.implFileName(basename) )
 
         if self.configurator.templateAll() :
