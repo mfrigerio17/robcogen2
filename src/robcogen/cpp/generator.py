@@ -37,7 +37,6 @@ class Generator:
         self._loadLuaModule('common.lua')
         #self._loadLuaModule('tpl_fwd_dyn.lua')
         self._loadLuaModule('tpl_inv_dyn.lua')
-        self._loadLuaModule('tpl_cmake.lua')
         luat = self._loadLuaModule('generator.lua')
 
         self.generators = luat.generators(self.robot, transforms, configurator)

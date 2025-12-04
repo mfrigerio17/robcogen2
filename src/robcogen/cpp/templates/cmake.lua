@@ -36,8 +36,6 @@ set(HEADERS
     ./«impl_files.inertia»
     ./«impl_files.inv_dyn»
 )
-
-add_executable(tpl_test «impl_files.tpl_test»)
 @else
 )
 
@@ -67,12 +65,12 @@ target_link_libraries(test-id   ${LIB_NAME})
 target_link_libraries(test-cons ${LIB_NAME})
 ]]
 
-local genutils = RCG.utils.templates
-
-generators.cmake = function(robot, configurator, env)
+local function generator_cmake(robot, configurator, env)
     env.libname = configurator.txtCfg.make.libName(robot)
     env.incpath = configurator.txtCfg.make.incPath(robot)
     return function()
-        return genutils.tpl_eval(cmakefile, env)
+        return RCG.utils.templates.tpl_eval(cmakefile, env)
     end
 end
+
+return generator_cmake
