@@ -1,6 +1,8 @@
 local id = [[
 #include <iit/robcogen/test/cmdline_id.h>
-#include <«headers.transforms»>  // TODO add the installation path
+#include <«headers.inertia»>
+#include <«headers.transforms»>
+#include <«headers.inv_dyn»> // TODO add the installation path
 #include <«headers.traits»>  // TODO add the installation path
 
 /**
@@ -16,17 +18,17 @@ int main(int argc, char** argv)
     using namespace «ns.qualifier»;
 
 @if robot.hasParametricGeometry then
-    Transforms xt{ModelParameters()};
+    Transforms«tplscalar» xt{ModelParameters«tplscalar»()};
 @else
-    Transforms xt{};
+    Transforms«tplscalar» xt{};
 @end
-    Traits::InertiaProperties ip;
-    Traits::InvDynEngine      id(ip, xt);
+    InertiaProperties«tplscalar» ip;
+    InverseDynamics«tplscalar» id(ip, xt);
 
 @if robot.isFloatingBase then
-    iit::robcogen::test::cmdline_id_fb< Traits >(argc, argv, id);
+    iit::robcogen::test::cmdline_id_fb< Traits«tplscalar» >(argc, argv, id);
 @else
-    iit::robcogen::test::cmdline_id< Traits >(argc, argv, id);
+    iit::robcogen::test::cmdline_id< Traits«tplscalar» >(argc, argv, id);
 @end
     return 0;
 }
@@ -34,6 +36,9 @@ int main(int argc, char** argv)
 
 local consistency = [[
 #include <iit/robcogen/test/dynamics_consistency.h>
+#include <«headers.inertia»>
+#include <«headers.transforms»>
+#include <«headers.inv_dyn»>
 #include <«headers.traits»>  // TODO add the installation path
 
 /**
@@ -51,24 +56,36 @@ int main(int argc, char** argv)
 {
     using namespace «ns.qualifier»;
 @if robot.hasParametricGeometry then
-    Transforms xt{ModelParameters()};
+    Transforms«tplscalar» xt{ModelParameters«tplscalar»()};
 @else
-    Transforms xt{};
+    Transforms«tplscalar» xt{};
 @end
-    Traits::InertiaProperties ip;
-    Traits::InvDynEngine      id(ip, xt);
+    InertiaProperties«tplscalar» ip;
+    InverseDynamics«tplscalar» id(ip, xt);
 
 @if robot.isFloatingBase then
-    iit::robcogen::test::floatingBaseID< Traits >(id);
+    iit::robcogen::test::floatingBaseID< Traits«tplscalar» >(id);
 @else
-    iit::robcogen::test::fixedBaseID<Traits>(id);
+    iit::robcogen::test::fixedBaseID< Traits«tplscalar» >(id);
 @end
 
     return 0;
 }
 ]]
 
-return {
-    id = id,
-    consistency = consistency,
-}
+
+
+local function generator_tests(robot, configurator, env)
+    env.tplscalar = ''
+    if configurator.templateAll() then
+        env.tplscalar = '<double>'
+    end
+    return {
+        test_id = function() return RCG.utils.templates.tpl_eval(id, env) end,
+        test_consistency = function() return RCG.utils.templates.tpl_eval(consistency, env) end,
+    }
+end
+
+
+
+return generator_tests

@@ -147,10 +147,10 @@ class Generator:
         self.fileWriter = self.fileWriter.subDir('tests')
 
         ok, text = self.generators.tests.test_id()
-        self._genFile(ok, text, self.configurator.implFileName(self.configurator.files.test_cmdline_id))
+        self._genFile(ok, text, self.configurator.files.test_cmdline_id+'.cpp')
 
         ok, text = self.generators.tests.test_consistency()
-        self._genFile(ok, text, self.configurator.implFileName(self.configurator.files.test_consistency))
+        self._genFile(ok, text, self.configurator.files.test_consistency+'.cpp')
 
 
         self.fileWriter = originalWriter

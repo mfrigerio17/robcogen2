@@ -42,15 +42,6 @@ int main()
 end
 
 
-local function generator_tests(robot, configurator, env)
-    return {
-        test_id = function() return genutils.tpl_eval(RCG.cpp.templates.tests.id, env) end,
-        test_consistency = function() return genutils.tpl_eval(RCG.cpp.templates.tests.consistency, env) end,
-    }
-end
-
-
-
 local function allGenerators(robot, transforms, configurator)
     local config    = configurator.txtCfg
     local cfgdata   = configurator.data
@@ -94,8 +85,8 @@ local function allGenerators(robot, transforms, configurator)
             inv_dyn   = impl_file_name(configurator.files.h_inv_dyn),
             fwd_dyn   = impl_file_name(configurator.files.h_fwd_dyn),
             tpl_test  = configurator.files.tpl_test .. '.cpp',
-            test_cmdline_id = impl_file_name(configurator.files.test_cmdline_id),
-            test_consistency = impl_file_name(configurator.files.test_consistency),
+            test_cmdline_id = configurator.files.test_cmdline_id .. '.cpp',
+            test_consistency = configurator.files.test_consistency .. '.cpp',
         },
         sorted_links = iterutils.sorted_links,
         sorted_links_reversed = iterutils.sorted_links_reversed,
@@ -114,7 +105,7 @@ local function allGenerators(robot, transforms, configurator)
         id        = RCG.cpp.generators.inverse_dynamics(robot, configurator, env),
         cmake     = RCG.cpp.generators.cmake(robot, configurator, env),
         --tpl_test  = tpl_test_code(env),
-        tests     = generator_tests(robot, configurator, env),
+        tests     = RCG.cpp.generators.tests(robot, configurator, env),
     }
 
     return ret
