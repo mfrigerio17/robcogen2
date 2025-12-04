@@ -13,18 +13,27 @@ import robcogen.vpc
 
 
 def add_cmdline_opts(args):
-    args.add_argument('--template', dest='templateAll', action='store_true', help='template everything on the scalar type')
+    args.add_argument('--template', dest='template_all',
+                      action='store_const', const=True, default=None,
+                      help='template everything on the scalar type')
 
 _lua_config_file_path = os.path.join( os.path.dirname(__file__), 'config.lua')
 
 class Configurator:
     def __init__(self, cmdline_args, robot):
-        self.robot = robot
-        luaCodeSrc = open( _lua_config_file_path, "r")
-        self.txtCfg = lua.lua_runtime.execute(luaCodeSrc.read())
-        luaCodeSrc.close()
+        self.robot  = robot
+        self.txtCfg = lua.load_code_from_file(_lua_config_file_path)
 
-        self.template = cmdline_args.templateAll or False
+        template_all = self.txtCfg.opts.template_all or False
+        if cmdline_args is not None:
+            template_all = cmdline_args.template_all or template_all
+
+        # re-write the entry in the config dictionary, just in case, to make
+        # sure a value is there, possibly the command line override
+        self.txtCfg.opts.template_all = template_all
+
+        self.do_template_all = template_all
+
 
         def spatialVectorIndex(joint):
             if joint.kind == JointKind.prismatic :
@@ -83,7 +92,7 @@ class Configurator:
     def symbolicExpressionToCode(self, symb_expr, replacements):
         return robcogen.vpc.symbolicExpressionToCode(symb_expr, replacements)
 
-    def templateAll(self): return self.template
+    def templateAll(self): return self.do_template_all
 
     def headerFileName(self, base_name) :
         return base_name + '.h'
@@ -118,6 +127,7 @@ class CTGenConfigurator(ctcppgen.config.Configurator):
 
         jointState_t = local_lua_cfg.types.jointState
         if mainConfigurator.templateAll() :
+            ctgen_lua_cfg.tpl.template_all = True
         # Constrain the scalar type used internally by the transforms code.
         # Normally, this would not be necessary, as this is a type defined
         # within the transforms class for internal use. However, there is a

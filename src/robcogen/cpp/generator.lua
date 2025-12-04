@@ -50,7 +50,7 @@ local function generator_tests(robot, configurator, env)
 end
 
 local function allGenerators(robot, transforms, configurator)
-    local config = configurator.txtCfg
+    local config    = configurator.txtCfg
     local cfgdata   = configurator.data
     local ns        = cpputils.ns_utils( config.namespaces(robot) )
     local ns_iitrbd = cpputils.ns_utils( pyIterableToTable(cfgdata.iitrbd.namespace) )
@@ -62,7 +62,7 @@ local function allGenerators(robot, transforms, configurator)
         robot = robot,
         inertial_data = robot.inertia.actual_data, -- for the inertia properties
         vars = config.vars,
-        mxops = configurator.txtCfg.mxops,
+        mxops = config.mxops,
         ns = ns,
         ns_iit_rbd = ns_iitrbd,
         types   = config.types,
@@ -71,7 +71,7 @@ local function allGenerators(robot, transforms, configurator)
         common = common(robot, transforms, configurator),
         utils = genutils,
         iterutils = iterutils, -- TODO: remove - the iterators should be in this env
-        templateAll = configurator.templateAll(),
+        templateAll  = config.opts.template_all,
         includeGuard = config.internal.includeGuard(robot),
         typesMacro   = config.internal.typesMacro,
         headers = {

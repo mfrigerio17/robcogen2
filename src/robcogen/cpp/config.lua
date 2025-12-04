@@ -47,7 +47,7 @@ local config =
 
     opts = {
         use_constexpr = false,
-
+        template_all = false,
     },
 
     make = {
