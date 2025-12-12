@@ -10,7 +10,7 @@ end
 
 -- Use a local alias for the expected global modules
 local cpputils  = cpputils
-local common    = cppcommon
+local common    = RCG.cpp.common
 local genutils  = RCG.utils.templates
 local iterutils = RCG.utils.iters
 local generators= generators -- this is the global tab where the various Lua files are storing the local generators

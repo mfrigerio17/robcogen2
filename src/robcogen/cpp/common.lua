@@ -64,3 +64,5 @@ end
 cppcommon = commons -- deprecate
 
 rcg__cppcommon = commons
+
+return commons
