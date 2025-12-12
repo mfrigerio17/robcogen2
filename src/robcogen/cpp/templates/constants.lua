@@ -23,7 +23,7 @@ ${ns.close}
 
 local impl_template = [[
 @ -- when using constexpr, the source file is unnecessary, we leave it empty
-@if not meta.constants.use_constexpr then
+@if meta.constants.avoid_constexpr then
 @   if not templateAll then
 #include "«headers.constants»"
 
@@ -63,7 +63,7 @@ local function generators_constants(robot, configurator, given_env)
     -- The sub-templates for the declaration/definition of a constant
     local declaration = 'static constexpr «types.scalar» «constant.name»{«constant.value»};'
     local definition  = ''
-    if not env.meta.constants.use_constexpr then
+    if env.meta.constants.avoid_constexpr then
         declaration = 'static const «types.scalar» «constant.name»;'
         definition  = '«tpl»const «types.scalar» «ns.qualifier»::«classqualifier»::«constant.name»{«constant.value»};'
     end

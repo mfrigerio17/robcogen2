@@ -56,7 +56,7 @@ local config =
     meta = {
         constants = {
             class = 'ModelConstants',
-            use_constexpr = true, -- default, works for trivial scalar types
+            avoid_constexpr = false,
         },
         inertia_properties = {
             class = 'InertiaProperties',

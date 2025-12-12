@@ -10,12 +10,18 @@ from robmodel.connectivity import JointKind as JointKind
 import robcogen.luabridge as lua
 import robcogen.constants
 import robcogen.vpc
-
+import robcogen.utils.files as fileutils
 
 def add_cmdline_opts(args):
     args.add_argument('--template', dest='template_all',
                       action='store_const', const=True, default=None,
                       help='template everything on the scalar type')
+    args.add_argument('--no-constexpr', dest='no_constexpr',
+                      action='store_const', const=True, default=None,
+                      help='do NOT use constexpr for the scalar constants')
+    args.add_argument('--use-constexpr', dest='no_constexpr',
+                      action='store_const', const=False, default=None,
+                      help='do use constexpr for the scalar constants')
 
 _lua_config_file_path = os.path.join( os.path.dirname(__file__), 'config.lua')
 
@@ -25,14 +31,19 @@ class Configurator:
         self.txtCfg = lua.load_code_from_file(_lua_config_file_path)
 
         template_all = self.txtCfg.opts.template_all or False
+        no_constepxr = self.txtCfg.meta.constants.avoid_constexpr or False
         if cmdline_args is not None:
             template_all = cmdline_args.template_all or template_all
+            if cmdline_args.no_constexpr is not None:
+                no_constepxr = cmdline_args.no_constexpr
 
         # re-write the entry in the config dictionary, just in case, to make
         # sure a value is there, possibly the command line override
         self.txtCfg.opts.template_all = template_all
+        self.txtCfg.meta.constants.avoid_constexpr = no_constepxr
 
         self.do_template_all = template_all
+        self.avoid_constexpr = no_constepxr
 
 
         def spatialVectorIndex(joint):
@@ -94,6 +105,8 @@ class Configurator:
 
     def templateAll(self): return self.do_template_all
 
+    def avoidConstexpr(self): return self.avoid_constexpr
+
     def headerFileName(self, base_name) :
         return base_name + '.h'
 
@@ -119,11 +132,20 @@ class CTGenConfigurator(ctcppgen.config.Configurator):
 
         # Load the local Lua configuration, which we will use to override some
         # of the defaults of the ct-gen configuration.
-        # Note that we must use the ct-gen Lua runtime, as Lua objects from
-        # different runtimes cannot interoperate (see Lupa docs).
-        luaCfgFile = open( _lua_config_file_path, "r")
+
+        # NOTE that we must use the ct-gen Lua runtime, as Lua objects from
+        # different runtimes cannot interoperate (see Lupa docs). I.e. we
+        # cannot use mainConfigurator.textCfg
+
+        luaCfgFile = fileutils.open_utf8_reading(_lua_config_file_path)
         local_lua_cfg = ctcppgen.luaRuntime.execute(luaCfgFile.read())
         luaCfgFile.close()
+
+        # BEWARE of the entries that may have been overridden by the
+        # mainConfigurator (e.g. due to user flags), which are not reflected in
+        # the file; do not reference them, use the getters of mainConfigurator.
+        # For example:
+        ctgen_lua_cfg.constants.use_constexpr = not mainConfigurator.avoidConstexpr()
 
         jointState_t = local_lua_cfg.types.jointState
         if mainConfigurator.templateAll() :
