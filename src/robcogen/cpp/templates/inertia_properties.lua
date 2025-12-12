@@ -217,7 +217,7 @@ local function generators_inertia_properties(robot, configurator, given_env)
     env.inertial_data = robot.inertia.actual_data
     env.include_guard = env.includeGuard(configurator.files.h_inertia)
     env.sorted_links  = function(robot) return given_env.sorted_links(robot, "include_base_if_floating") end
-    env.tpl_help = env.common.scalarTpl( env.meta.inertia_properties.class, env.templateAll )
+    env.tpl_help = env.common.scalarTpl( env.meta.inertia_properties.class )
     env.field_value = field_value
     env.tensor_expression = tensor_expression
 

@@ -33,8 +33,9 @@ local function commons(robot, transforms, configurator)
         linkIdentifier  = configurator.txtCfg.ids.link,
         spatialVectorIndex = configurator.data.iitrbd.spatialVectorIndex,
         iitrbd = configurator.data.iitrbd,
-        scalarTpl = function(class, do_templates)
-            return scalar_tpl_utils(configurator.txtCfg.types.scalar, class, do_templates) end,
+        scalarTpl = function(class)
+            return scalar_tpl_utils(configurator.txtCfg.types.scalar, class, configurator.templateAll())
+        end,
 
         constantValueAccess = nil, -- will be set by the main Generator
 
