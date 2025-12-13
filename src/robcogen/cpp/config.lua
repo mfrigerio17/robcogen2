@@ -15,6 +15,9 @@ local config =
         jointIDs = 'JointIDs',
         linkIDs = 'LinkIDs',
         externalForces = 'ExtForces',
+        classScopeAliases = {
+            jointState = 'JState_t',
+        },
     },
     ids = {
         joint = function(joint) return joint.name end,
@@ -94,10 +97,32 @@ local config =
             end
         end
     },
-
 }
 
-rcg__cpp_text_config = config
+-- Add more fields to the config table
+-- We do it outside the initial definition, so that we can refer to existing entries
+
+config.meta.inverse_dynamics = {
+    class = 'InverseDynamics',
+    members = {
+        xt = 'xt',
+        getters = {
+            force = function(link) return "getForce_"..link.name end,
+            vel   = function(link) return "getVelocity_"..link.name end,
+            acc   = function(link) return "getAcceleration_"..link.name end,
+        },
+    },
+    params = {
+        q= "q", qd= "qd", qdd= "qdd", tau= "tau",
+        basea_in= "base_a", basef= "base_f", g= "gravity",
+        fext= "fext"
+    },
+    local_types = {
+        fext = config.types.externalForces,
+    },
+}
+
+
 
 return config
 

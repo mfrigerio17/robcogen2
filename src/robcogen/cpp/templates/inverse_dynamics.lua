@@ -1,67 +1,3 @@
--- local-ize the expected global variables
-local GLOB = generators
-
-
-local function class_code_meta(robot, configurator, env)
-    local types = configurator.txtCfg.types
-
-    local function getter_name_func_factory(quantityKind)
-        return function(link)
-            return "get" .. quantityKind .. "_" .. link.name
-        end
-    end
-
-    local meta = {
-        class = 'InverseDynamics', --TODO read from config
-        members = {
-            ip = 'ip',
-            xt = 'xt',
-            jsim_inverse = 'jsim_inverse'
-        },
-        getters = {
-            force = getter_name_func_factory("Force"),
-            vel   = getter_name_func_factory("Velocity"),
-            acc   = getter_name_func_factory("Acceleration"),
-        },
-        params = {
-            q= "q", qd= "qd", qdd= "qdd", tau= "tau",
-
-            -- Base v/a cannot be chosen freely, they must match the pattern
-            -- configured for the robot links
-            basev= configurator.txtCfg.vars.vel(robot.base),
-            basea= configurator.txtCfg.vars.acc(robot.base),
-
-            basea_in= "base_a", basef= "base_f", g= "gravity",
-            fext= "fext"
-        },
-        local_types = {
-            fext = types.externalForces,
-        },
-        other_classes = {
-            inertia    = env.meta.inertia_properties,
-            transforms = {
-                class = env.common.transformsContainerMeta.class_name,
-                members = env.common.transformsContainerMeta.members,
-            },
-        },
-    }
-    meta.fparam = {
-        q   = "const " .. types.jointState .. "& " .. meta.params.q,
-        qd  = "const " .. types.jointState .. "& " .. meta.params.qd,
-        qdd = "const " .. types.jointState .. "& " .. meta.params.qdd,
-        tau = types.jointState .. "& " .. meta.params.tau,
-        basev = "const Velocity& " .. meta.params.basev,
-        basea = "Acceleration& " .. meta.params.basea,
-        basea_in = "const Acceleration& " .. meta.params.basea_in,
-        basef = "Force& " .. meta.params.basef,
-        g = "const Acceleration& " .. meta.params.g,
-        fext = "const " .. meta.local_types.fext .. "& " .. meta.params.fext,
-    }
-    return meta
-end
-
-
-
 local header_template = [[
 #ifndef «include_guard»
 #define «include_guard»
@@ -98,14 +34,13 @@ ${ns.open}
  * the reference frame of the link it is excerted on.
  */
 «tpl.heading»
-struct «meta.class»
+struct «self.class»
 {
 @if templateAll then
 «typesMacro»
-using «types.jointState» = «types.jointState»«tpl.suffix»;
-
 @end
-    using «meta.local_types.fext» = ::rcg2::DataMap<Force, linksCount, «types.linkIDs»>;
+    using «t_jstate» = «types.jointState»«tpl.suffix»;
+    using «self.local_types.fext» = ::rcg2::DataMap<Force, linksCount, «types.linkIDs»>;
 
     /**
      * Default constructor
@@ -114,11 +49,11 @@ using «types.jointState» = «types.jointState»«tpl.suffix»;
      *     the robot «robot.name», which will be used by this instance
      *     to compute inverse-dynamics.
      */
-    «meta.class»(const «meta.other_classes.inertia.class»«tpl.suffix»& ip, «meta.other_classes.transforms.class»«tpl.suffix»& xt);
+    «self.class»(const «meta.inertia_properties.class»«tpl.suffix»& ip, «meta.transforms_container.class»«tpl.suffix»& xt);
 
     /** Updates all the kinematics transforms used by this instance. */
-    void setJointStatus(const «types.jointState»& q) {
-        «meta.members.xt».«meta.other_classes.transforms.members.update»(q);
+    void setJointStatus(«self.fparam.q») {
+        «self.members.xt».«meta.transforms_container.members.update»(«self.params.q»);
     }
 
 @if robot.isFloatingBase then
@@ -128,31 +63,31 @@ using «types.jointState» = «types.jointState»«tpl.suffix»;
      * All the spatial vectors in the parameters are expressed in base coordinates,
      * besides the external forces: each force must be expressed in the reference
      * frame of the link it is acting on.
-     * \param[out] «meta.params.tau» the joint force vector required to achieve the desired accelerations
-     * \param[out] «meta.params.basea» the spatial acceleration of the robot base
-     * \param[in] «meta.params.g» the gravity acceleration, as a spatial vector;
+     * \param[out] «self.params.tau» the joint force vector required to achieve the desired accelerations
+     * \param[out] «self.params.basea» the spatial acceleration of the robot base
+     * \param[in] «self.params.g» the gravity acceleration, as a spatial vector;
      *      gravity implicitly specifies the orientation of the base in space
-     * \param[in] «meta.params.basev» the spatial velocity of the base
-     * \param[in] «meta.params.q» the joint position vector
-     * \param[in] «meta.params.qd» the joint velocity vector
-     * \param[in] «meta.params.qdd» the desired joint acceleration vector
-     * \param[in] «meta.params.fext» the external forces acting on the links; this parameters
+     * \param[in] «self.params.basev» the spatial velocity of the base
+     * \param[in] «self.params.q» the joint position vector
+     * \param[in] «self.params.qd» the joint velocity vector
+     * \param[in] «self.params.qdd» the desired joint acceleration vector
+     * \param[in] «self.params.fext» the external forces acting on the links; this parameters
      *            defaults to zero
      */ ///@{
     void id(
-        «meta.fparam.tau», «meta.fparam.basea»,
-        «meta.fparam.g», «meta.fparam.basev»,
-        «meta.fparam.q», «meta.fparam.qd», «meta.fparam.qdd»,
-        «meta.fparam.fext» = zeroExtForces)
+        «self.fparam.tau», «self.fparam.basea»,
+        «self.fparam.g», «self.fparam.basev»,
+        «self.fparam.q», «self.fparam.qd», «self.fparam.qdd»,
+        «self.fparam.fext» = zeroExtForces)
     {
-        setJointStatus(«meta.params.q»);
-        id(«meta.params.tau», «meta.params.basea», «meta.params.g», «meta.params.basev», «meta.params.qd», «meta.params.qdd», «meta.params.fext»);
+        setJointStatus(«self.params.q»);
+        id(«self.params.tau», «self.params.basea», «self.params.g», «self.params.basev», «self.params.qd», «self.params.qdd», «self.params.fext»);
     }
     void id(
-        «meta.fparam.tau», «meta.fparam.basea»,
-        «meta.fparam.g», «meta.fparam.basev»,
-        «meta.fparam.qd», «meta.fparam.qdd»,
-        «meta.fparam.fext» = zeroExtForces);
+        «self.fparam.tau», «self.fparam.basea»,
+        «self.fparam.g», «self.fparam.basev»,
+        «self.fparam.qd», «self.fparam.qdd»,
+        «self.fparam.fext» = zeroExtForces);
     ///@}
     /** \name Inverse dynamics, fully actuated base
      * The inverse dynamics algorithm for the floating base robot,
@@ -161,49 +96,49 @@ using «types.jointState» = «types.jointState»«tpl.suffix»;
      * All the spatial vectors in the parameters are expressed in base coordinates,
      * besides the external forces: each force must be expressed in the reference
      * frame of the link it is acting on.
-     * \param[out] «meta.params.basef» the spatial force to be applied to
+     * \param[out] «self.params.basef» the spatial force to be applied to
      *   the robot base to achieve the desired accelerations
-     * \param[out] «meta.params.tau» the joint force vector required to achieve the desired accelerations
+     * \param[out] «self.params.tau» the joint force vector required to achieve the desired accelerations
      * \param[in] g the gravity acceleration, as a spatial vector;
      *              gravity implicitly specifies the orientation of the base in space
-     * \param[in] «meta.params.basev» the spatial velocity of the base
-     * \param[in] «meta.params.basea» the desired spatial acceleration of the robot base
-     * \param[in] «meta.params.q» the joint position vector
-     * \param[in] «meta.params.qd» the joint velocity vector
-     * \param[in] «meta.params.qdd» the desired joint acceleration vector
-     * \param[in] «meta.fparam.fext» the external forces acting on the links; this parameter
+     * \param[in] «self.params.basev» the spatial velocity of the base
+     * \param[in] «self.params.basea» the desired spatial acceleration of the robot base
+     * \param[in] «self.params.q» the joint position vector
+     * \param[in] «self.params.qd» the joint velocity vector
+     * \param[in] «self.params.qdd» the desired joint acceleration vector
+     * \param[in] «self.fparam.fext» the external forces acting on the links; this parameter
      *            defaults to zero
      */ ///@{
     void id_fully_actuated(
-        «meta.fparam.basef», «meta.fparam.tau»,
-        «meta.fparam.g», «meta.fparam.basev», «meta.fparam.basea_in»,
-        «meta.fparam.q», «meta.fparam.qd», «meta.fparam.qdd»,
-        «meta.fparam.fext» = zeroExtForces)
+        «self.fparam.basef», «self.fparam.tau»,
+        «self.fparam.g», «self.fparam.basev», «self.fparam.basea_in»,
+        «self.fparam.q», «self.fparam.qd», «self.fparam.qdd»,
+        «self.fparam.fext» = zeroExtForces)
     {
-        setJointStatus(«meta.params.q»);
-        id_fully_actuated(«meta.params.basef», «meta.params.tau», «meta.params.g», «meta.params.basev»,
-            «meta.params.basea_in», «meta.params.qd», «meta.params.qdd», fext);
+        setJointStatus(«self.params.q»);
+        id_fully_actuated(«self.params.basef», «self.params.tau», «self.params.g», «self.params.basev»,
+            «self.params.basea_in», «self.params.qd», «self.params.qdd», fext);
     }
     void id_fully_actuated(
-        «meta.fparam.basef», «meta.fparam.tau»,
-        «meta.fparam.g», «meta.fparam.basev», «meta.fparam.basea_in»,
-        «meta.fparam.qd», «meta.fparam.qdd»,
-        «meta.fparam.fext» = zeroExtForces);
+        «self.fparam.basef», «self.fparam.tau»,
+        «self.fparam.g», «self.fparam.basev», «self.fparam.basea_in»,
+        «self.fparam.qd», «self.fparam.qdd»,
+        «self.fparam.fext» = zeroExtForces);
     ///@}
 
     /** \name Gravity terms, fully actuated base
      */
     ///@{
     void G_terms_fully_actuated(
-        «meta.fparam.basef», «meta.fparam.tau»,
-        «meta.fparam.g», «meta.fparam.q»)
+        «self.fparam.basef», «self.fparam.tau»,
+        «self.fparam.g», «self.fparam.q»)
     {
-        setJointStatus(«meta.params.q»);
-        G_terms_fully_actuated(«meta.params.basef», «meta.params.tau», «meta.params.g»);
+        setJointStatus(«self.params.q»);
+        G_terms_fully_actuated(«self.params.basef», «self.params.tau», «self.params.g»);
     }
     void G_terms_fully_actuated(
-        «meta.fparam.basef», «meta.fparam.tau»,
-        «meta.fparam.g»);
+        «self.fparam.basef», «self.fparam.tau»,
+        «self.fparam.g»);
     ///@}
 
     /** \name Centrifugal and Coriolis terms, fully actuated base
@@ -218,44 +153,44 @@ using «types.jointState» = «types.jointState»«tpl.suffix»;
      */
     ///@{
     void C_terms_fully_actuated(
-        «meta.fparam.basef», «meta.fparam.tau»,
-        «meta.fparam.basev», «meta.fparam.q», «meta.fparam.qd»)
+        «self.fparam.basef», «self.fparam.tau»,
+        «self.fparam.basev», «self.fparam.q», «self.fparam.qd»)
     {
-        setJointStatus(«meta.params.q»);
-        C_terms_fully_actuated(«meta.params.basef», «meta.params.tau», «meta.params.basev», qd);
+        setJointStatus(«self.params.q»);
+        C_terms_fully_actuated(«self.params.basef», «self.params.tau», «self.params.basev», qd);
     }
     void C_terms_fully_actuated(
-        «meta.fparam.basef», «meta.fparam.tau»,
-        «meta.fparam.basev», «meta.fparam.qd»);
+        «self.fparam.basef», «self.fparam.tau»,
+        «self.fparam.basev», «self.fparam.qd»);
     ///@}
 @ else
     /** \name Inverse dynamics
      * The full Newton-Euler algorithm for the inverse dynamics of this robot.
      *
-     * \param[out] «meta.params.tau» the joint force vector required to achieve the desired accelerations
-     * \param[in] «meta.params.q» the joint position vector
-     * \param[in] «meta.params.qd» the joint velocity vector
-     * \param[in] «meta.params.qdd» the desired joint acceleration vector
-     * \param[in] «meta.fparam.fext» the external forces acting on the links; this parameters
+     * \param[out] «self.params.tau» the joint force vector required to achieve the desired accelerations
+     * \param[in] «self.params.q» the joint position vector
+     * \param[in] «self.params.qd» the joint velocity vector
+     * \param[in] «self.params.qdd» the desired joint acceleration vector
+     * \param[in] «self.fparam.fext» the external forces acting on the links; this parameters
      *            defaults to zero
      */
     ///@{
     void id(
-        «meta.fparam.tau»,
-        «meta.fparam.q», «meta.fparam.qd», «meta.fparam.qdd»,
-        «meta.fparam.fext» = zeroExtForces)
+        «self.fparam.tau»,
+        «self.fparam.q», «self.fparam.qd», «self.fparam.qdd»,
+        «self.fparam.fext» = zeroExtForces)
     {
-        setJointStatus(«meta.params.q»);
-        id(«meta.params.tau», «meta.params.qd», «meta.params.qdd», «meta.params.fext»);
+        setJointStatus(«self.params.q»);
+        id(«self.params.tau», «self.params.qd», «self.params.qdd», «self.params.fext»);
     }
 
     void id(
-        «meta.fparam.tau»,
-        «meta.fparam.qd», «meta.fparam.qdd»,
-        «meta.fparam.fext» = zeroExtForces)
+        «self.fparam.tau»,
+        «self.fparam.qd», «self.fparam.qdd»,
+        «self.fparam.fext» = zeroExtForces)
     {
-        firstPass(«meta.params.qd», «meta.params.qdd», «meta.params.fext»);
-        secondPass(«meta.params.tau»);
+        firstPass(«self.params.qd», «self.params.qdd», «self.params.fext»);
+        secondPass(«self.params.tau»);
     }
     ///@}
 
@@ -264,11 +199,11 @@ using «types.jointState» = «types.jointState»«tpl.suffix»;
      * for the effect of gravity, in a specific configuration.
      */
     ///@{
-    void G_terms(«meta.fparam.tau», «meta.fparam.q») {
-        setJointStatus(«meta.params.q»);
-        G_terms(«meta.params.tau»);
+    void G_terms(«self.fparam.tau», «self.fparam.q») {
+        setJointStatus(«self.params.q»);
+        G_terms(«self.params.tau»);
     }
-    void G_terms(«meta.fparam.tau»);
+    void G_terms(«self.fparam.tau»);
     ///@}
 
     /** \name Centrifugal and Coriolis terms
@@ -276,11 +211,11 @@ using «types.jointState» = «types.jointState»«tpl.suffix»;
      * Coriolis effects, for a specific configuration.
      */
     ///@{
-    void C_terms(«meta.fparam.tau», «meta.fparam.q», «meta.fparam.qd») {
-        setJointStatus(«meta.params.q»);
-        C_terms(«meta.params.tau», «meta.params.qd»);
+    void C_terms(«self.fparam.tau», «self.fparam.q», «self.fparam.qd») {
+        setJointStatus(«self.params.q»);
+        C_terms(«self.params.tau», «self.params.qd»);
     }
-    void C_terms(«meta.fparam.tau», «meta.fparam.qd»);
+    void C_terms(«self.fparam.tau», «self.fparam.qd»);
     ///@}
 @ end
 
@@ -331,22 +266,25 @@ using «types.jointState» = «types.jointState»«tpl.suffix»;
 
 protected:
 @ if robot.isFloatingBase then
-    void sweep_inwards_fully_actuated(«meta.fparam.tau»);
+    void sweep_inwards_fully_actuated(«self.fparam.tau»);
 @ else
-    void firstPass(«meta.fparam.qd», «meta.fparam.qdd», «meta.fparam.fext»);
-    void secondPass(«meta.fparam.tau»);
+    void firstPass(«self.fparam.qd», «self.fparam.qdd», «self.fparam.fext»);
+    void secondPass(«self.fparam.tau»);
 @ end
 
 private:
-    «meta.other_classes.transforms.class»& «meta.members.xt»;
+    «meta.transforms_container.class»«tpl.suffix»& «self.members.xt»;
     Matrix66 vcross; // support variable
 
 private:
-    static const «meta.local_types.fext» zeroExtForces;
+    static const «self.local_types.fext» zeroExtForces;
 };
 
-
 ${ns.close}
+
+@if templateAll then
+#include "«impl_files.inv_dyn»"
+@end
 
 #endif
 ]]
@@ -354,24 +292,25 @@ ${ns.close}
 local source_template = [[
 #include <iit/rbd/robcogen_commons.h>
 
+@if not templateAll then
 #include "«headers.inv_dyn»"
-
-using namespace std;
-using namespace «ns_iit_rbd.qualifier»;
+@end
 
 @local qualifier = ns.qualifier .. '::' .. tpl.class.in_qualifier
 
 // Initialization of static-const data
-const «qualifier»::«meta.local_types.fext»
+«tpl.heading»
+const typename «qualifier»::«self.local_types.fext»
 «qualifier»::zeroExtForces(Force::Zero());
 
-«qualifier»::«meta.class»(const «meta.other_classes.inertia.class»& inertia, «meta.other_classes.transforms.class»& transforms) :
+«tpl.heading»
+«qualifier»::«self.class»(const «meta.inertia_properties.class»«tpl.suffix»& inertia, «meta.transforms_container.class»«tpl.suffix»& transforms) :
     // the local aliases for the inertia tensors:
 @ for  _,link,comma in sorted_links(robot) do
-    «vars.I(link)»( inertia.«meta.other_classes.inertia.members.tensorGetter(link)»() ),
+    «vars.I(link)»( inertia.«meta.inertia_properties.members.tensorGetter(link)»() ),
 @end
 @if robot.isFloatingBase then
-    «vars.I(robot.base)»( inertia.«meta.other_classes.inertia.members.tensorGetter(robot.base)»() ),
+    «vars.I(robot.base)»( inertia.«meta.inertia_properties.members.tensorGetter(robot.base)»() ),
     // the composite inertia of leaf links IS the regular inertia
 @   for _,link in sorted_links(robot) do
 @       if robot.treeutils.isLeaf(link) then
@@ -379,7 +318,7 @@ const «qualifier»::«meta.local_types.fext»
 @       end
 @   end
 @end
-    «meta.members.xt»(transforms)
+    «self.members.xt»(transforms)
 {
 @for name,link in sorted_links(robot) do
     «vars.vel(link)».setZero();
@@ -397,29 +336,34 @@ ${fixed_base_methods_definitions}
 
 local fixed_base_methods_definitions = [[
 @local qualifier = ns.qualifier .. '::' .. tpl.class.in_qualifier
-
-void «qualifier»::«meta.class»::G_terms(«meta.fparam.tau»)
+«tpl.heading»
+void «qualifier»::«self.class»::G_terms(«self.fparam.tau»)
 {
+    using namespace «ns_iit_rbd.qualifier»;
     ${fixed_base_pass1_G}
 
-    secondPass(«meta.params.tau»);
+    secondPass(«self.params.tau»);
 }
-
-void «qualifier»::«meta.class»::C_terms(«meta.fparam.tau», «meta.fparam.qd»)
+«tpl.heading»
+void «qualifier»::«self.class»::C_terms(«self.fparam.tau», «self.fparam.qd»)
 {
+    using namespace «ns_iit_rbd.qualifier»;
     ${fixed_base_pass1_C}
 
-    secondPass(«meta.params.tau»);
+    secondPass(«self.params.tau»);
 }
 
-
-void «qualifier»::«meta.class»::firstPass(«meta.fparam.qd», «meta.fparam.qdd», «meta.fparam.fext»)
+«tpl.heading»
+void «qualifier»::«self.class»::firstPass(«self.fparam.qd», «self.fparam.qdd», «self.fparam.fext»)
 {
+    using namespace «ns_iit_rbd.qualifier»;
     ${fixed_base_pass1}
 }
 
-void «qualifier»::«meta.class»::secondPass(«meta.fparam.tau»)
+«tpl.heading»
+void «qualifier»::«self.class»::secondPass(«self.fparam.tau»)
 {
+    using namespace «ns_iit_rbd.qualifier»;
     ${fixed_base_pass2}
 }
 ]]
@@ -439,38 +383,38 @@ local fixed_base_pass1 = [[
 @   if (parent~=robot.base) or (parent==robot.base and robot.isFloatingBase and not hybridDynamics) then
 @   --
 «velocity» = «child_X_parent» * «vars.vel(parent)»;
-«velocity»(«idx») += «meta.params.qd»(«jid»);
+«velocity»(«idx») += «self.params.qd»(«jid»);
 
 motionCrossProductMx<«types.scalar»>(«velocity», vcross);
 
-«acceler» = «child_X_parent» * «vars.acc(parent)» + vcross.col(«idx») * «meta.params.qd»(«jid»);
-«acceler»(«idx») += «meta.params.qdd»(«jid»);
+«acceler» = «child_X_parent» * «vars.acc(parent)» + vcross.col(«idx») * «self.params.qd»(«jid»);
+«acceler»(«idx») += «self.params.qdd»(«jid»);
 
-«vars.force(link)» = «vars.I(link)» * «acceler» + vxIv(«velocity», «vars.I(link)») - «meta.params.fext»[«common.linkIdentifier(link)»];
+«vars.force(link)» = «vars.I(link)» * «acceler» + vxIv(«velocity», «vars.I(link)») - «self.params.fext»[«common.linkIdentifier(link)»];
 @   --
 @   elseif not robot.isFloatingBase then -- parent IS the fixed-base
 @   --
-«velocity»(«idx») = «meta.params.qd»(«jid»);   // «velocity» = vJ, for the first link of a fixed base robot
+«velocity»(«idx») = «self.params.qd»(«jid»);   // «velocity» = vJ, for the first link of a fixed base robot
 «acceler» = «child_X_parent».matrix().col(LZ) * «ns_iit_rbd.qualifier»::g;
-«acceler»(«idx») += «meta.params.qdd»(«jid»);
+«acceler»(«idx») += «self.params.qdd»(«jid»);
 @       if joint.kind == RCG.enums.JointKind.prismatic then
 // The first joint is prismatic, no centripetal terms.
-«vars.force(link)» = «vars.I(link)» * «acceler» - «meta.params.fext»[«common.linkIdentifier(link)»];
+«vars.force(link)» = «vars.I(link)» * «acceler» - «self.params.fext»[«common.linkIdentifier(link)»];
 @       else
-«vars.force(link)» = «vars.I(link)» * «acceler» + vxIv(«meta.params.qd»(«jid»), «vars.I(link)») - «meta.params.fext»[«common.linkIdentifier(link)»];
+«vars.force(link)» = «vars.I(link)» * «acceler» + vxIv(«self.params.qd»(«jid»), «vars.I(link)») - «self.params.fext»[«common.linkIdentifier(link)»];
 @       end
 @   --
 @   else -- parent IS the floating-base and we are coding hybrid dynamics
 @   --
 «velocity» = «child_X_parent» * «vars.vel(parent)»;
-«velocity»(«idx») += «meta.params.qd»(«jid»);
+«velocity»(«idx») += «self.params.qd»(«jid»);
 
 motionCrossProductMx<«types.scalar»>(«velocity», vcross);
 
-«acceler» = vcross.col(«idx») * «meta.params.qd»(«jid»);
-«acceler»(«idx») += «meta.params.qdd»(«jid»);
+«acceler» = vcross.col(«idx») * «self.params.qd»(«jid»);
+«acceler»(«idx») += «self.params.qdd»(«jid»);
 
-«vars.force(link)» = «vars.I(link)» * «acceler» + vxIv(«velocity», «vars.I(link)») - «meta.params.fext»[«common.linkIdentifier(link)»];
+«vars.force(link)» = «vars.I(link)» * «acceler» + vxIv(«velocity», «vars.I(link)») - «self.params.fext»[«common.linkIdentifier(link)»];
 @   end
 
 @end
@@ -482,9 +426,9 @@ local fixed_base_pass2 = [[
 // Link '«name»'
 @   local parent   = robot.treeutils.parent(link)
 @   local joint    = robot.treeutils.supportingJoint(link)
-«meta.params.tau»(«common.jointIdentifier(joint)») = «vars.force(link)»(«common.spatialVectorIndex(joint)»);
+«self.params.tau»(«common.jointIdentifier(joint)») = «vars.force(link)»(«common.spatialVectorIndex(joint)»);
 @   if (parent ~= robot.base) or robot.isFloatingBase then
-«vars.force(parent)» += «common.parent_XF_link(link,meta.members.xt)» * «vars.force(link)»;
+«vars.force(parent)» += «common.parent_XF_link(link,self.members.xt)» * «vars.force(link)»;
 @   end
 
 @end]]
@@ -493,7 +437,7 @@ local fixed_base_pass1_G = [[
 @for name,link in sorted_links(robot) do
 // Link '«name»'
 @   local parent   = robot.treeutils.parent(link)
-@   local child_X_parent = common.link_XM_parent(link, meta.members.xt)
+@   local child_X_parent = common.link_XM_parent(link, self.members.xt)
 @   if (parent == robot.base) and not robot.isFloatingBase then
 «vars.acc(link)» = («child_X_parent»).matrix().col(«ns_iit_rbd.qualifier»::LZ) * «ns_iit_rbd.qualifier»::g;
 @   else
@@ -517,23 +461,23 @@ local fixed_base_pass1_C = [[
 @   local idx      = common.spatialVectorIndex(joint)
 // Link '«name»'
 @   if (parent == robot.base) and not robot.isFloatingBase then
-«velocity»(«idx») = «meta.params.qd»(«jid»);   // «velocity» = vJ, for the first link of a fixed base robot
+«velocity»(«idx») = «self.params.qd»(«jid»);   // «velocity» = vJ, for the first link of a fixed base robot
 @       if joint.kind == RCG.enums.JointKind.prismatic then
 «force».setZero();  // first joint is prismatic, no centripetal terms
 @       else
-«force» = vxIv(«meta.params.qd»(«jid»), «inertia»);
+«force» = vxIv(«self.params.qd»(«jid»), «inertia»);
 @       end
 @   else
 «velocity» = «child_X_parent» * «vars.vel(parent)»;
-«velocity»(«idx») += «meta.params.qd»(«jid»);
+«velocity»(«idx») += «self.params.qd»(«jid»);
 motionCrossProductMx<«types.scalar»>(«velocity», vcross);
 
 @ -- Both children of floating bases and grandsons of fixed bases do not have
 @ -- acceleration of their parent
 @       if ((parent==robot.base) and robot.isFloatingBase) or (robot.treeutils.parent(parent)==robot.base and not robot.isFloatingBase) then
-«acceler» = vcross.col(«idx») * «meta.params.qd»(«jid»);
+«acceler» = vcross.col(«idx») * «self.params.qd»(«jid»);
 @       else
-«acceler» = «child_X_parent» * «vars.acc(parent)» + vcross.col(«idx») * «meta.params.qd»(«jid»);
+«acceler» = «child_X_parent» * «vars.acc(parent)» + vcross.col(«idx») * «self.params.qd»(«jid»);
 @       end
 «force» = «inertia» * «acceler» + vxIv(«velocity», «inertia»);
 @   end
@@ -543,59 +487,68 @@ motionCrossProductMx<«types.scalar»>(«velocity», vcross);
 
 local floating_base_methods_definitions = [[
 @local qualifier = ns.qualifier .. '::' .. tpl.class.in_qualifier
-
-void «qualifier»::«meta.class»::G_terms_fully_actuated(«meta.fparam.basef», «meta.fparam.tau»,
-        «meta.fparam.g»)
+«tpl.heading»
+void «qualifier»::«self.class»::G_terms_fully_actuated(«self.fparam.basef», «self.fparam.tau»,
+        «self.fparam.g»)
 {
-    const Acceleration «vars.acc(robot.base)»{-«meta.params.g»};
+    using namespace «ns_iit_rbd.qualifier»;
+    const Acceleration «vars.acc(robot.base)»{-«self.params.g»};
     «vars.force(robot.base)» = «vars.I(robot.base)» * «vars.acc(robot.base)»;
 
     ${fixed_base_pass1_G}
 
-    sweep_inwards_fully_actuated(«meta.params.tau»);
+    sweep_inwards_fully_actuated(«self.params.tau»);
 
-    «meta.params.basef» = «vars.force(robot.base)»;
+    «self.params.basef» = «vars.force(robot.base)»;
 }
 
-void «qualifier»::«meta.class»::C_terms_fully_actuated(«meta.fparam.basef», «meta.fparam.tau», «meta.fparam.basev», «meta.fparam.qd»)
+«tpl.heading»
+void «qualifier»::«self.class»::C_terms_fully_actuated(«self.fparam.basef», «self.fparam.tau», «self.fparam.basev», «self.fparam.qd»)
 {
-    «vars.force(robot.base)» = vxIv(«meta.params.basev», «vars.I(robot.base)»);
+    using namespace «ns_iit_rbd.qualifier»;
+    «vars.force(robot.base)» = vxIv(«self.params.basev», «vars.I(robot.base)»);
 
     ${fixed_base_pass1_C}
 
-    sweep_inwards_fully_actuated(«meta.params.tau»);
+    sweep_inwards_fully_actuated(«self.params.tau»);
 
-    «meta.params.basef» = «vars.force(robot.base)»;
+    «self.params.basef» = «vars.force(robot.base)»;
 }
 
-void «qualifier»::«meta.class»::id_fully_actuated(
-    «meta.fparam.basef», «meta.fparam.tau»,
-    «meta.fparam.g», «meta.fparam.basev», «meta.fparam.basea_in»,
-    «meta.fparam.qd», «meta.fparam.qdd»,
-    «meta.fparam.fext» /*= zeroExtForces*/)
+«tpl.heading»
+void «qualifier»::«self.class»::id_fully_actuated(
+    «self.fparam.basef», «self.fparam.tau»,
+    «self.fparam.g», «self.fparam.basev», «self.fparam.basea_in»,
+    «self.fparam.qd», «self.fparam.qdd»,
+    «self.fparam.fext» /*= zeroExtForces*/)
 {
-    Acceleration «vars.acc(robot.base)» = «meta.params.basea_in» - «meta.params.g»;
-    «vars.force(robot.base)» = «vars.I(robot.base)» * «vars.acc(robot.base)» + vxIv(«meta.params.basev», «vars.I(robot.base)») - «meta.params.fext»[«common.linkIdentifier(robot.base)»];
+    using namespace «ns_iit_rbd.qualifier»;
+    Acceleration «vars.acc(robot.base)» = «self.params.basea_in» - «self.params.g»;
+    «vars.force(robot.base)» = «vars.I(robot.base)» * «vars.acc(robot.base)» + vxIv(«self.params.basev», «vars.I(robot.base)») - «self.params.fext»[«common.linkIdentifier(robot.base)»];
 
     ${fb_pass1_fully_actuated}
 
-    sweep_inwards_fully_actuated(«meta.params.tau»);
+    sweep_inwards_fully_actuated(«self.params.tau»);
 
-    «meta.params.basef» = «vars.force(robot.base)»;
+    «self.params.basef» = «vars.force(robot.base)»;
 }
 
-void «qualifier»::«meta.class»::sweep_inwards_fully_actuated(«meta.fparam.tau»)
+«tpl.heading»
+void «qualifier»::«self.class»::sweep_inwards_fully_actuated(«self.fparam.tau»)
 {
+    using namespace «ns_iit_rbd.qualifier»;
     ${fixed_base_pass2}
 }
 
-void «qualifier»::«meta.class»::id(
-    «meta.fparam.tau», «meta.fparam.basea»,
-    «meta.fparam.g», «meta.fparam.basev»,
-    «meta.fparam.qd», «meta.fparam.qdd»,
-    «meta.fparam.fext» /*= zeroExtForces*/)
+«tpl.heading»
+void «qualifier»::«self.class»::id(
+    «self.fparam.tau», «self.fparam.basea»,
+    «self.fparam.g», «self.fparam.basev»,
+    «self.fparam.qd», «self.fparam.qdd»,
+    «self.fparam.fext» /*= zeroExtForces*/)
 {
-    «vars.force(robot.base)» = vxIv(«meta.params.basev», «vars.I(robot.base)») - «meta.params.fext»[«common.linkIdentifier(robot.base)»];
+    using namespace «ns_iit_rbd.qualifier»;
+    «vars.force(robot.base)» = vxIv(«self.params.basev», «vars.I(robot.base)») - «self.params.fext»[«common.linkIdentifier(robot.base)»];
 
     ${fb_pass1_hybrid_dynamics}
 
@@ -614,9 +567,9 @@ void «qualifier»::«meta.class»::id(
 @for name,link in sorted_links_reversed(robot) do
     // Link '«name»'
     @   local parent   = robot.treeutils.parent(link)
-    «ns_iit_rbd.qualifier»::transformInertia<«types.scalar»>(«vars.Ic(link)», «common.link_CT_parent(link,meta.members.xt)».ct, Ic_aux);
+    «ns_iit_rbd.qualifier»::transformInertia<«types.scalar»>(«vars.Ic(link)», «common.link_CT_parent(link,self.members.xt)».ct, Ic_aux);
     «vars.Ic(parent)» += Ic_aux;
-    «vars.force(parent)» += «common.parent_XF_link(link,meta.members.xt)» * «vars.force(link)»;
+    «vars.force(parent)» += «common.parent_XF_link(link,self.members.xt)» * «vars.force(link)»;
 
 @end
 
@@ -632,32 +585,57 @@ void «qualifier»::«meta.class»::id(
 @   local joint    = robot.treeutils.supportingJoint(link)
 @   local idx      = common.spatialVectorIndex(joint)
     «vars.acc(link)» = «child_mx_parent(link)» * «vars.acc(parent)»;
-    «meta.params.tau»(«common.jointIdentifier(joint)») = («vars.Ic(link)».row(«idx») * «vars.acc(link)» + «vars.force(link)»(«idx»));
+    «self.params.tau»(«common.jointIdentifier(joint)») = («vars.Ic(link)».row(«idx») * «vars.acc(link)» + «vars.force(link)»(«idx»));
 
 @end
 
-    «vars.acc(robot.base)» += «meta.params.g»;
+    «vars.acc(robot.base)» += «self.params.g»;
 }
 ]]
 
-local function id_generators(robot, configurator, given_env)
+local function generators_inverse_dynamics(robot, configurator, given_env)
     -- shallow copy the template environment, then add the fields required for
     -- the local templates
     local env = {}
     for k,v in pairs(given_env) do  env[k] = v  end
 
-    env.meta  = class_code_meta(robot, configurator, env)
-    env.include_guard = env.includeGuard(configurator.files.h_inv_dyn)
-    env.tpl   = env.common.scalarTpl( env.meta.class, env.templateAll )
+    local t_jstate = env.types.classScopeAliases.jointState
+    local self = configurator.txtCfg.meta.inverse_dynamics
+
+    -- The names for the base v/a cannot be chosen freely, they must match the
+    -- naming patterns configured for the robot links.
+    -- This is because the code generation templates rely on such patterns
+    -- in generic loops that will fill in the methods bodies: we must
+    -- make sure that the generated identifiers match the arguments names
+    self.params.basev = configurator.txtCfg.vars.vel(robot.base)
+    self.params.basea = configurator.txtCfg.vars.acc(robot.base)
+    self.fparam = {
+        q   = "const " .. t_jstate .. "& " .. self.params.q,
+        qd  = "const " .. t_jstate .. "& " .. self.params.qd,
+        qdd = "const " .. t_jstate .. "& " .. self.params.qdd,
+        tau = t_jstate .. "& " .. self.params.tau,
+        basev = "const Velocity& " .. self.params.basev,
+        basea = "Acceleration& " .. self.params.basea,
+        basea_in = "const Acceleration& " .. self.params.basea_in,
+        basef = "Force& " .. self.params.basef,
+        g = "const Acceleration& " .. self.params.g,
+        fext = "const " .. self.local_types.fext .. "& " .. self.params.fext,
+    }
+    env.self = self
+    env.t_jstate = t_jstate
+    env.tpl  = env.common.scalarTpl( self.class )
     env.D = function(link) return 'D_' .. link.name end
     env.child_mx_parent = function(link)
-        return env.common.link_XM_parent(link, env.meta.members.xt)
+        return env.common.link_XM_parent(link, self.members.xt)
     end
 
     local tpleval = RCG.utils.templates.tpl_eval
 
     return {
-        header = function() return tpleval(header_template, env) end,
+        header = function()
+            env.include_guard = env.includeGuard(configurator.files.h_inv_dyn)
+            return tpleval(header_template, env)
+        end,
         source = function()
             local _, fixed_base_pass1_G = tpleval(fixed_base_pass1_G, env, {returnTable=true})
             local _, fixed_base_pass1_C = tpleval(fixed_base_pass1_C, env, {returnTable=true})
@@ -686,14 +664,12 @@ local function id_generators(robot, configurator, given_env)
                 env.fixed_base_methods_definitions = text
             end
 
-            return tpleval(source_template, env)
+            ok, text = tpleval(source_template, env)
+            return ok, text
         end
     }
 end
 
 
 
-GLOB.id = {
-    generators = id_generators,
-    meta = meta,
-}
+return generators_inverse_dynamics

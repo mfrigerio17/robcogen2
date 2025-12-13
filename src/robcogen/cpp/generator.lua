@@ -111,7 +111,7 @@ local function allGenerators(robot, transforms, configurator)
         constants = RCG.cpp.generators.constants(robot, configurator, env),
         inertia   = RCG.cpp.generators.inertia_properties(robot, configurator, env),
         --fd        = generators.fd.generators(robot, configurator, env),
-        id        = generators.id.generators(robot, configurator, env),
+        id        = RCG.cpp.generators.inverse_dynamics(robot, configurator, env),
         cmake     = RCG.cpp.generators.cmake(robot, configurator, env),
         --tpl_test  = tpl_test_code(env),
         tests     = generator_tests(robot, configurator, env),
