@@ -80,18 +80,6 @@ class Configurator:
             constantFolding = False
         )
 
-
-        self.transformsContainerMeta = DictDot(
-            class_name =  self.txtCfg.classes.transforms,
-
-            members = DictDot(
-                transform = lambda tfMetadata : 'm_' + tfMetadata.name,
-                update_params = 'updateParams',
-                update = 'update',
-                parameters = 'parameters'
-            )
-        )
-
     @property
     def files(self):
         return self.data.files
@@ -179,10 +167,10 @@ class CTGenConfigurator(ctcppgen.config.Configurator):
         ctgen_lua_cfg.scalar_traits.use_default        = False
         ctgen_lua_cfg.scalar_traits.type_name = 'iit::rbd::ScalarTraits'
 
-        desired = mainConfigurator.transformsContainerMeta
+        desired = local_lua_cfg.meta.transforms_container
         current = ctgen_lua_cfg.container_class
         current.generate_it = True
-        current.class_name = lambda _ : desired.class_name
+        current.class_name = lambda _ : desired["class"]
         current.members.transform    = desired.members.transform
         current.members.update_params= desired.members.update_params
         current.members.update       = desired.members.update

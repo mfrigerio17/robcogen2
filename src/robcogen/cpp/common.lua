@@ -27,7 +27,7 @@ end
 
 
 local function commons(robot, transforms, configurator)
-    local tfMeta = configurator.transformsContainerMeta
+    local tfMeta = configurator.txtCfg.meta.transforms_container
     return {
         jointIdentifier = configurator.txtCfg.ids.joint,
         linkIdentifier  = configurator.txtCfg.ids.link,
@@ -38,8 +38,6 @@ local function commons(robot, transforms, configurator)
         end,
 
         constantValueAccess = nil, -- will be set by the main Generator
-
-        transformsContainerMeta = tfMeta,
 
         link_CT_parent = function(link, container)
             local ctMeta = transforms.link_CT_parent__byLink[link]

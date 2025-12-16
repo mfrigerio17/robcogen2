@@ -74,6 +74,15 @@ local config =
                 pvalue = function(param) return param.name end
             }
         },
+        transforms_container = {
+            class = 'Transforms',
+            members = {
+                transform = function(tfMetadata) return 'm_'..tfMetadata.name end,
+                update_params = 'updateParams',
+                update = 'update',
+                parameters = 'parameters',
+            },
+        },
     },
 
     internal = {
