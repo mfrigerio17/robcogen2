@@ -7,16 +7,15 @@ from robmodel.connectivity import JointKind
 
 lua_runtime = lupa.LuaRuntime(unpack_returned_tuples=True)
 
+def load_code(code_text, origin=None):
+    origin = origin or "user template"
+    ret = lua_runtime.execute(code_text, name=origin)
+    return ret
 
 def load_code_from_file(full_path):
     with fileutils.open_utf8_reading(full_path) as code:
-        ret = lua_runtime.execute(code.read())
+        ret = load_code(code.read(), pathlib.Path(full_path).name)
         return ret
-
-def load_code(code_text):
-    ret = lua_runtime.execute(code_text)
-    return ret
-
 
 # prepare the global symbol table that will be used by the generators
 dosetup = lua_runtime.eval('''
