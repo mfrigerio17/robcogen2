@@ -86,6 +86,22 @@ local config =
                 parameters = 'parameters',
             },
         },
+        jsim = {
+            class = 'JSIM',
+            members = {
+                transforms = 'xt',
+                inertia = 'ip',
+                getters = {
+                    realJointsBlock = 'getRealJointsBlock', -- only for floating base robots
+                },
+            },
+            local_types = {
+                block_F = 'FBlock_t',
+                block_realJoints = 'RealJointsBlock_t',
+                mx_realJoints = 'RealJointsBlock_matrix_t',
+                mx_full = 'Matrix_t',
+            },
+        },
     },
 
     internal = {

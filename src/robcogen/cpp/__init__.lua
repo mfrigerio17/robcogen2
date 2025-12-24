@@ -5,6 +5,7 @@ local function load_lua_modules(path)
             constants          = loadfile(path .. "/templates/constants.lua") (),
             inertia_properties = loadfile(path .. "/templates/inertia_properties.lua") (),
             inverse_dynamics   = loadfile(path .. "/templates/inverse_dynamics.lua") (),
+            jsim               = loadfile(path .. "/templates/jsim.lua") (),
             tests              = loadfile(path .. "/templates/tests.lua") (),
             cmake              = loadfile(path .. "/templates/cmake.lua") (),
             playground         = loadfile(path .. "/templates/playground.lua") (),

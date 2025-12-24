@@ -68,8 +68,10 @@ class Configurator:
             h_inertia = 'inertia_properties',
             h_fwd_dyn = 'forward_dynamics',
             h_inv_dyn = 'inverse_dynamics',
+            h_jsim = 'jsim',
             playground = 'playground',
             test_cmdline_id = 'test_id',
+            test_cmdline_jsim = 'test_jsim',
             test_consistency = 'test_consistency',
         )
 

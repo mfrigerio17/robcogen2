@@ -137,6 +137,12 @@ class Generator:
         ok, text = self.generators.id.source()
         self._genFile(ok, text, self.configurator.implFileName(basename))
 
+        basename = self.configurator.files.h_jsim
+        ok, text = self.generators.jsim.header()
+        self._genFile(ok, text, self.configurator.headerFileName(basename))
+        ok, text = self.generators.jsim.source()
+        self._genFile(ok, text, self.configurator.implFileName(basename))
+
     def cmakefile(self):
         ok, text = self.generators.cmake()
         self._genFile(ok, text, 'CMakeLists.txt')
@@ -147,6 +153,9 @@ class Generator:
 
         ok, text = self.generators.tests.test_id()
         self._genFile(ok, text, self.configurator.files.test_cmdline_id+'.cpp')
+
+        ok, text = self.generators.tests.test_jsim()
+        self._genFile(ok, text, self.configurator.files.test_cmdline_jsim+'.cpp')
 
         ok, text = self.generators.tests.test_consistency()
         self._genFile(ok, text, self.configurator.files.test_consistency+'.cpp')
