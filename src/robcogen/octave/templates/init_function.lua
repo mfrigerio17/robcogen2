@@ -9,15 +9,22 @@ robot.mgp = «ns_qualifier»«meta.class_geom_parameters.name»();
 robot.ip  = «ns_qualifier»«meta.class_inertia_properties.name»(robot.mic, robot.mip);
 robot.xm  = «ns_qualifier»«meta.class_transforms_container.name»(robot.mgc, robot.mgp);
 
+robot.jsim = «ns_qualifier»«meta.class_jsim.name»(robot.ip, robot.xm);
+
+% Some function handles for convenience:
+
+robot.updateK = @(q) robot.xm.«meta.class_transforms_container.methods.update_all»(q);
+
 @if robot.isFloatingBase then
-robot.ID  = @(v_base, gravity, qd, qdd, fext) «ns_qualifier»«meta.func_inverse_dynamics.name»(robot.ip, robot.xm, v_base, gravity, qd, qdd, fext);
+robot.ID = @(v_base, gravity, qd, qdd, fext) «ns_qualifier»«meta.func_inverse_dynamics.name»(robot.ip, robot.xm, v_base, gravity, qd, qdd, fext);
 @else
-robot.ID  = @(qd, qdd, fext) «ns_qualifier»«meta.func_inverse_dynamics.name»(robot.ip, robot.xm, qd, qdd, fext);
+robot.ID   = @(qd, qdd, fext) «ns_qualifier»«meta.func_inverse_dynamics.name»(robot.ip, robot.xm, qd, qdd, fext);
 @end
+
 
 % addpath( <robcogen_root>/testing/src );
 % addpath( genpath( <spatial_V2 root> ) );
-% robot.roy = «ns_qualifier»«meta.func_roys_model.name(robot)»(«robot.name».mgc, «robot.name».mgp, «robot.name».mic, «robot.name».mip);
+% robot.roy = «ns_qualifier»«meta.func_roys_model.name(robot)»(robot.mgc, robot.mgp, robot.mic, robot.mip);
 ]]
 
 
