@@ -18,9 +18,6 @@ import robcogen.cpp.config
 import robcogen.cpp.templates
 
 logger = logging.getLogger(__name__)
-homrepr = MatrixRepresentation.homogeneous
-
-
 
 
 _path_here = fileutils.base_path(__file__)
@@ -29,6 +26,7 @@ _path_here = fileutils.base_path(__file__)
 class Generator:
     def __init__(self, robot, transforms, configurator, fileWriter):
         self.robot = robot
+        self.transforms = transforms
         self.configurator = configurator
         self.fileWriter = fileWriter
 
@@ -116,13 +114,10 @@ class Generator:
         luacfg.constants.value_expression = self.constValueExprGenerator
         ctgenerator = ctgencpp.Generator( ctgenConfigurator )
 
-        allMxMeta = {}
-        for ctMeta in ctModelMeta.transformsMetadata :
-            MX     = mxrepr.hCoordinatesSymbolic(ctMeta.ct)
-            mxMeta = MatrixReprMetadata(ctMeta, MX, MatrixRepresentation.homogeneous)
-            allMxMeta[ctMeta.name] = mxMeta
+        matricesMetadata = self.transforms.allMatricesMetadata(MatrixRepresentation.homogeneous)
 
-        (okh,header), (oks,source) = ctgenerator.generate_code(ctModelMeta, {homrepr : allMxMeta})
+        (okh,header), (oks,source) = ctgenerator.generate_code(ctModelMeta,
+                          {MatrixRepresentation.homogeneous : matricesMetadata})
         basename = self.configurator.files.h_transforms
         self._genFile(okh, header, self.configurator.headerFileName(basename) )
         self._genFile(oks, source, self.configurator.implFileName(basename) )
