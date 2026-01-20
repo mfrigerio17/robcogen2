@@ -43,12 +43,11 @@ class TransformsModelWrapper:
 
         allMxMeta = {}
         for mxType in [MatrixRepresentation.homogeneous,
-                              MatrixRepresentation.spatial_motion,
-                                    MatrixRepresentation.spatial_force]:
+                        MatrixRepresentation.spatial_motion, MatrixRepresentation.spatial_force ]:
             byName = {}
             for ctMeta in ctModelMeta.transformsMetadata :
-                MX     = mxrepr.spatialMotionSymbolic(ctMeta.ct)
-                mxMeta = MatrixReprMetadata(ctMeta, MX, mxType )
+                MX     = mxrepr.symbolic[mxType](ctMeta.ct)
+                mxMeta = MatrixReprMetadata(ctMeta, MX, mxType)
                 byName[ctMeta.name] = mxMeta
 
             allMxMeta[mxType] = byName;
