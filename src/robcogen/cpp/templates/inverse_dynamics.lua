@@ -237,7 +237,7 @@ struct «self.class»
      * of the links is unaffected by the computation of the gravity terms).
      */
     ///@{
-@for name,link in sorted_links(robot) do
+@for name,link in sorted_links() do
     // Link '«name»' :
     const InertiaMatrix& «vars.I(link)»;
     Velocity      «vars.vel(link)»;
@@ -253,7 +253,7 @@ struct «self.class»
     Force         «vars.force(robot.base)»;
 
     // The composite inertia tensors
-@   for _,link in sorted_links(robot) do
+@   for _,link in sorted_links() do
 @     if robot.treeutils.isLeaf(link) then
     const InertiaMatrix& «vars.Ic(link)»;
 @     else
@@ -306,13 +306,13 @@ const typename «qualifier»::«self.local_types.fext»
 «tpl.heading»
 «qualifier»::«self.class»(const «meta.inertia_properties.class»«tpl.suffix»& inertia, «meta.transforms_container.class»«tpl.suffix»& transforms) :
     // the local aliases for the inertia tensors:
-@ for  _,link,comma in sorted_links(robot) do
+@ for  _,link in sorted_links() do
     «vars.I(link)»( inertia.«meta.inertia_properties.members.tensorGetter(link)»() ),
 @end
 @if robot.isFloatingBase then
     «vars.I(robot.base)»( inertia.«meta.inertia_properties.members.tensorGetter(robot.base)»() ),
     // the composite inertia of leaf links IS the regular inertia
-@   for _,link in sorted_links(robot) do
+@   for _,link in sorted_links() do
 @       if robot.treeutils.isLeaf(link) then
     «vars.Ic(link)»(«vars.I(link)»),
 @       end
@@ -320,7 +320,7 @@ const typename «qualifier»::«self.local_types.fext»
 @end
     «self.members.xt»(transforms)
 {
-@for name,link in sorted_links(robot) do
+@for name,link in sorted_links() do
     «vars.vel(link)».setZero();
 @ end
 
@@ -370,7 +370,7 @@ void «qualifier»::«self.class»::secondPass(«self.fparam.tau»)
 
 
 local fixed_base_pass1 = [[
-@for name,link in sorted_links(robot) do
+@for name,link in sorted_links() do
 @   local parent   = robot.treeutils.parent(link)
 @   local joint    = robot.treeutils.supportingJoint(link)
 @   local velocity = vars.vel(link)
@@ -422,7 +422,7 @@ motionCrossProductMx<«types.scalar»>(«velocity», vcross);
 
 
 local fixed_base_pass2 = [[
-@for name,link in sorted_links_reversed(robot) do
+@for name,link in sorted_links_reversed() do
 // Link '«name»'
 @   local parent   = robot.treeutils.parent(link)
 @   local joint    = robot.treeutils.supportingJoint(link)
@@ -434,7 +434,7 @@ local fixed_base_pass2 = [[
 @end]]
 
 local fixed_base_pass1_G = [[
-@for name,link in sorted_links(robot) do
+@for name,link in sorted_links() do
 // Link '«name»'
 @   local parent   = robot.treeutils.parent(link)
 @   local child_X_parent = common.link_XM_parent(link, self.members.xt)
@@ -449,7 +449,7 @@ local fixed_base_pass1_G = [[
 
 
 local fixed_base_pass1_C = [[
-@for name,link in sorted_links(robot) do
+@for name,link in sorted_links() do
 @   local parent   = robot.treeutils.parent(link)
 @   local joint    = robot.treeutils.supportingJoint(link)
 @   local velocity = vars.vel(link)
@@ -558,13 +558,13 @@ void «qualifier»::«self.class»::id(
 
     InertiaMatrix Ic_aux;
     // initialize the composite inertias
-@for _,link in sorted_links(robot, "include_base_if_floating") do
+@for _,link in sorted_links(robot.isFloatingBase) do
 @   if not robot.treeutils.isLeaf(link) then
     «vars.Ic(link)» = «vars.I(link)»;
 @   end
 @end
 
-@for name,link in sorted_links_reversed(robot) do
+@for name,link in sorted_links_reversed() do
     // Link '«name»'
     @   local parent   = robot.treeutils.parent(link)
     «ns_iit_rbd.qualifier»::transformInertia<«types.scalar»>(«vars.Ic(link)», «common.link_CT_parent(link,self.members.xt)».ct, Ic_aux);
@@ -580,7 +580,7 @@ void «qualifier»::«self.class»::id(
     // ---------- //
     // propagate outwards the base acceleration and get the joint torques
 
-@for name,link in sorted_links(robot) do
+@for name,link in sorted_links() do
 @   local parent   = robot.treeutils.parent(link)
 @   local joint    = robot.treeutils.supportingJoint(link)
 @   local idx      = common.spatialVectorIndex(joint)

@@ -65,24 +65,24 @@ public:
     «CLASS»();
     ~«CLASS»() {};
 
-@for name,link in sorted_links(robot) do
+@for name,link in sorted_links(robot.isFloatingBase) do
     const InertiaMatrix& «NAMES.members.tensorGetter(link)»() const {
         return tensor_«name»;
     }
 @ end
-@for name,link in sorted_links(robot) do
+@for name,link in sorted_links(robot.isFloatingBase) do
     «types.scalar» «NAMES.members.massGetter(link)»() const {
         return tensor_«name».getMass();
     }
 @ end
-@for name,link in sorted_links(robot) do
+@for name,link in sorted_links(robot.isFloatingBase) do
     const «types.vec3»& «NAMES.members.comGetter(link)»() const {
         return com_«name»;
     }
 @ end
     «types.scalar» getTotalMass() const {
         return
-@ for _,fcall,plus in utils.i_iterator_with_separator(utils.i_iterator_decorator(function() return sorted_links(robot) end, NAMES.members.massGetter), "+") do
+@ for _,fcall,plus in utils.i_iterator_with_separator(utils.i_iterator_decorator(function() return sorted_links(robot.isFloatingBase) end, NAMES.members.massGetter), "+") do
             «fcall»()«plus»
 @ end
         ;
@@ -99,10 +99,10 @@ public:
 private:
     «meta.inertia_parameters.class»«tpl_help.suffix» «NAMES.members.parameters»;
 
-@for name,link in sorted_links(robot) do
+@for name,link in sorted_links(robot.isFloatingBase) do
     InertiaMatrix tensor_«name»;
 @ end
-@for name,link in sorted_links(robot) do
+@for name,link in sorted_links(robot.isFloatingBase) do
     «types.vec3» com_«name»;
 @ end
 };
@@ -128,7 +128,7 @@ local source = [[
 «tpl_help.heading»
 «qualifier»::«CLASS»()
 {
-@for name,link in sorted_links(robot) do
+@for name,link in sorted_links(robot.isFloatingBase) do
 @   local ip = inertial_data.byLink(link)
     com_«name» = «types.vec3»(«field_value(ip.com.x)», «field_value(ip.com.y)», «field_value(ip.com.z)»);
     tensor_«name».fill(
@@ -216,7 +216,6 @@ local function generators_inertia_properties(robot, configurator, given_env)
     end
     env.inertial_data = robot.inertia.actual_data
     env.include_guard = env.includeGuard(configurator.files.h_inertia)
-    env.sorted_links  = function(robot) return given_env.sorted_links(robot, "include_base_if_floating") end
     env.tpl_help = env.common.scalarTpl( env.meta.inertia_properties.class )
     env.field_value = field_value
     env.tensor_expression = tensor_expression

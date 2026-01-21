@@ -75,10 +75,17 @@ local function _python_iterator_factory(reversed)
 end
 
 --- Create an iterator factory for the links of the given robot.
--- The iterator return <name,link> pairs, ordered according to the robot model.
+-- The iterator returns <name,link> pairs, ordered according to the robot model.
 -- Pass a true flag to this method to have iteration in the opposite order.
 -- The returned iterator factory also takes an optional flag, which controls
--- whether the robot base is included in the traversal (defaults to NO)
+-- whether the robot base is included in the iteration (defaults to NO).
+--
+-- Strictly speaking, this function is a factory of factories: it returns a
+-- function like 'pairs' (which is an iterator factory), which needs to be
+-- _called_ when used with the generic for. But each returned factory is itself
+-- a closure on the robot links and the "reversed" option, so that they do not
+-- need to be passed when doing the iteration.
+--
 local function get_sorted_links_iter_factory(robot, reversed)
     local pyiter = _python_iterator_factory(reversed)
     return function(opt_include_base)
@@ -89,7 +96,7 @@ local function get_sorted_links_iter_factory(robot, reversed)
 end
 
 --- Create an iterator factory for the joints of the given robot.
--- The iterator return <name,joint> pairs, ordered according to the robot model.
+-- The iterator returns <name,joint> pairs, ordered according to the robot model.
 -- Pass a true flag to this method to have iteration in the opposite order.
 local function get_sorted_joints_iter_factory(robot, reversed)
     local pyiter = _python_iterator_factory(reversed)

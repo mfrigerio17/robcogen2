@@ -82,8 +82,8 @@ typedef Matrix<«jsize», 1> Column«jsize»d;
 typedef Column«jsize»d «types.jointState»;
 @end
 
-@local jointIDs = utils.comma_separated_list(utils.i_iterator_decorator(function() return sorted_joints(robot) end, common.jointIdentifier))
-@local linkIDs  = utils.comma_separated_list(utils.i_iterator_decorator(function() return sorted_links(robot, "include_base_if_floating") end,  common.linkIdentifier))
+@local jointIDs = utils.comma_separated_list(utils.i_iterator_decorator(function() return sorted_joints() end, common.jointIdentifier))
+@local linkIDs  = utils.comma_separated_list(utils.i_iterator_decorator(function() return sorted_links(robot.isFloatingBase) end,  common.linkIdentifier))
 enum «types.jointIDs» {
     «jointIDs»
 };
