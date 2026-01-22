@@ -28,8 +28,6 @@ using Acceleration = typename TypesGen«tpl.suffix»::VelocityVector; \
 using Matrix66     = typename TypesGen«tpl.suffix»::Matrix66;       \
 using Column6      = typename TypesGen«tpl.suffix»::Column6D;        \
 using «types.vec3» = typename TypesGen«tpl.suffix»::Vector3; \
-template<int R, int C>                                              \
-using Matrix = Matrix<«tpl.scalar_t», R, C>; \
 using InertiaMatrix= «rbdns»::InertiaMat«tpl.suffix»;
 
 @   else
