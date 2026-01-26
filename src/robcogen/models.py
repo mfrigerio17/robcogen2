@@ -1,11 +1,13 @@
 from enum import Enum, auto
 import itertools
 import numbers
+from dataclasses import dataclass
 
 import robmodel.connectivity
 import robmodel.treeutils
 import robmodel.jposes
 
+import kgprim.core
 import kgprim.values as expr
 import kgprim.motions as motions
 import kgprim.ct as ct
@@ -76,6 +78,83 @@ class TransformsModelWrapper:
         return self.link_CT_parent__byLink.get(link)
 
 
+
+class IPField(Enum):
+    '''
+    Enumeration of all the scalar values of a rigid body inertia
+    '''
+    mass = 1
+    comx = 2
+    comy = 4
+    comz = 8
+    ixx  = 16
+    iyy  = 32
+    izz  = 64
+    ixy  = 128
+    ixz  = 256
+    iyz  = 512
+
+@dataclass(eq=True, frozen=True)
+class InertiaPropertyBacktrackingData:
+    link    : kgprim.core.RigidBody
+    ipfield : IPField
+
+@dataclass(eq=True, frozen=True)
+class KinematicPropertyBacktrackingData:
+    pose  : kgprim.core.Pose
+    mstep : kgprim.motions.MotionStep
+
+
+class ExpressionsOfAQuantity:
+    '''
+    The sequence of unique `kgprim.values.Expression`s for a given quantity
+    appearing in the robot model.
+    A "quantity" is either a `kgprim.values.Parameter` or `kgprim.values.Constant`
+    which appears in the definition of an attribute of the robot model.
+    '''
+
+    def __init__(self, quantity):
+        '''
+        Parameters:
+
+        - `quantity`: either a `kgprim.values.Parameter` or `kgprim.values.Constant` which
+           is part of the definition a property of the robot model
+        '''
+        self.quantity_ = quantity
+        self.expressions_ = dict() # preserves insertion order
+
+    def addExpression(self, expr, backtrackingData):
+        '''
+        Add a `kgprim.values.Expression` to this list.
+        The argument of the expression must be the same quantity stored in this
+        instance.
+        '''
+        if expr.arg != self.quantity:
+            logger.error("Argument mismatch: got an expression of '%s', expecting '%s'", expr.arg.name, self.quantity.name)
+        else:
+            seq = self.expressions_.setdefault(expr, [])
+            seq.append(backtrackingData)
+
+    @property
+    def quantity(self):
+        return self.quantity_
+
+    @property
+    def expressions(self):
+        return self.expressions_.keys()
+
+    def backtrackingData(self, expression):
+        return self.expressions_.get(expression, [])
+
+    def isIdentity(self, expression):
+        '''
+        Returns true if the given expression is simply the identity, i.e., it is
+        just a wrapper of a symbol.
+        '''
+        # see the API of kgprim.values.Expression
+        return expression.arg.symbol == expression.expr
+
+
 class RobotModel:
     '''
     The robot model data structure used by `robcogen.*` classes and functions.
@@ -142,20 +221,7 @@ class RobotModel:
                 self.kinematics.constants.keys() )
 
 
-class IPField(Enum):
-    '''
-    Enumeration of all the scalar values of a rigid body inertia
-    '''
-    mass = 1
-    comx = 2
-    comy = 4
-    comz = 8
-    ixx  = 16
-    iyy  = 32
-    izz  = 64
-    ixy  = 128
-    ixz  = 256
-    iyz  = 512
+
 
 ipgetter = {
     IPField.mass : (lambda bodyInertia : bodyInertia.mass),
@@ -207,20 +273,18 @@ class RobotInertia:
             prop = ipgetter[field](ip)
 
             if isinstance(prop, expr.Expression) :
-                rtexpr = RobotInertia.IdentifiedInertiaPropertyValue(prop, link, field)
+                backtrack = InertiaPropertyBacktrackingData(link, field)
                 quantity = prop.arg
 
                 if isinstance(quantity, expr.Parameter) :
-                    if quantity not in self.parameters_ :
-                        self.parameters_[quantity] = RobotQuantityMetadata(quantity)
-                    self.parameters_[quantity].addExpression( rtexpr )
+                    exprs = self.parameters_.setdefault(quantity, ExpressionsOfAQuantity(quantity))
+                    exprs.addExpression(prop, backtrack)
                     self.pflags[link].add( field )
                     self._isParametric = True
 
                 elif isinstance(quantity, expr.Constant) :
-                    if quantity not in self.constants_ :
-                        self.constants_[quantity] = RobotQuantityMetadata(quantity)
-                    self.constants_[quantity].addExpression( rtexpr )
+                    exprs = self.constants_.setdefault(quantity, ExpressionsOfAQuantity(quantity))
+                    exprs.addExpression(prop, backtrack)
                     self.cflags[link].add( field )
             else:
                 assert( isinstance(prop, numbers.Number) )
@@ -228,6 +292,9 @@ class RobotInertia:
     @property
     def constants(self):
         return self.constants_.keys()
+
+    def expressionsOfConstant(self, constant):
+        return self.constants_[constant]
 
     @property
     def parameters(self):
@@ -240,45 +307,6 @@ class RobotInertia:
     @property
     def actual_data(self):
         return self.inputModel
-
-    class IdentifiedInertiaPropertyValue:
-        '''
-        The composition of an inertia property and the expression that
-        represents its value.
-
-        The inertia property is identified symbolically by storing the robot
-        link and a `IPField` tag. The expression representing its value is a
-        `kgprim.values.Expression`.
-        '''
-        def __init__(self, expression, link, field):
-            self.expression = expression
-            self.link  = link
-            self.field = field
-
-        @property
-        def valueExpression(self):
-            '''The `kgprim.values.Expression` that represents the value of this property'''
-            return self.expression
-
-        @property
-        def robotLink(self):
-            '''The link of the robot this property is related to'''
-            return self.link
-
-        @property
-        def symbolicTag(self):
-            '''The `IPField` that corresponds to this property'''
-            return self.field
-
-        def isRotation(self): return False
-
-        def __eq__(self, rhs):
-            return (isinstance(rhs, RoundTrippableProperty) and
-                    (self.expression == rhs.expression) and
-                    (self.link == rhs.link) and
-                    (self.field == rhs.field))
-        def __hash__(self) :
-            return hash(self.expression) + 7*hash(self.link) + 11*hash(self.field)
 
     class ParametricFlags:
         com = IPField.comx.value + IPField.comy.value + IPField.comz.value
@@ -353,62 +381,17 @@ class RobotKinematics:
                 for motionStep in motionSequence.steps :
                     amount = motionStep.amount
                     if isinstance(amount, expr.Expression) :
-                        meta = RobotKinematics.RoundTrippableArgument(amount, motionStep, poseSpec.pose, )
+                        backtrack = KinematicPropertyBacktrackingData(poseSpec.pose, motionStep)
                         quantity = amount.arg
 
                         if isinstance(quantity, expr.Parameter) :
                             if quantity not in self.parameters_ :
-                                self.parameters_[quantity] = RobotQuantityMetadata(quantity)
-                            self.parameters_[quantity].addExpression( meta )
+                                self.parameters_[quantity] = ExpressionsOfAQuantity(quantity)
+                            self.parameters_[quantity].addExpression( amount, backtrack )
 
                         elif isinstance(quantity, expr.Constant) :
                             if quantity not in self.constants :
-                                self.constants[quantity] = RobotQuantityMetadata(quantity)
-                            self.constants[quantity].addExpression( meta )
+                                self.constants[quantity] = ExpressionsOfAQuantity(quantity)
+                            self.constants[quantity].addExpression( amount, backtrack )
 
-    class RoundTrippableArgument:
-        def __init__(self, expression, motionStep, pose):
-            self.expression  = expression
-            self.amountOf    = motionStep
-            self.takesPartIn = pose
-            # assert( self.amountOf.amount == self.expression )
-
-        def symbolic(self):
-            return self.expression.expr
-
-        def isRotation(self):
-            return self.amountOf.kind == MotionStep.Kind.Rotation
-
-        def __eq__(self, rhs):
-            if not isinstance(rhs, RoundTrippableArgument) :
-                return False
-            return ((self.expression == rhs.expression) and
-                    (self.amountOf == rhs.amountOf) and
-                    (self.takesPartIn == rhs.takesPartIn))
-
-        def __hash__(self) :
-            return hash(self.expression) + 7*hash(self.amountOf) + 11*hash(self.takesPartIn)
-
-
-class RobotQuantityMetadata:
-    def __init__(self, quantity):
-        '''
-        Parameters:
-
-        - `quantity`: either a `vpc.vpc.Parameter` or `vpc.vpc.Constant` which
-           is part of the definition a property of the robot model
-        '''
-        self.quantity = quantity
-        self.expressions = set()
-
-    def addExpression(self, expr):
-        self.expressions.add(expr)
-
-    def __eq__(self, rhs):
-        if not isinstance(rhs, RobotQuantityMetadata) :
-            return False
-        return self.quantity == rhs.quantity
-
-    def __hash__(self) :
-        return hash(self.quantity)
 
