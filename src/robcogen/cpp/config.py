@@ -109,8 +109,8 @@ class Configurator:
 
 
 class CTGenConfigurator(ctcppgen.config.Configurator):
-    def __init__(self, robotKinematics, mainConfigurator, ctModel):
-        super().__init__(ctModel)
+    def __init__(self, robotKinematics, mainConfigurator, ctModel, readAccessExprForGeometricConstant):
+        super().__init__(ctModel, None, None, lua.lua_runtime)
 
         self.robotKinematics = robotKinematics
         self.mainConfigurator = mainConfigurator
@@ -120,23 +120,16 @@ class CTGenConfigurator(ctcppgen.config.Configurator):
         # First, get the default configuration
         ctgen_lua_cfg = super().getTextGeneratorsConfiguration()
 
-        # Load the local Lua configuration, which we will use to override some
+        # We will use the local Lua configuration to override some
         # of the defaults of the ct-gen configuration.
+        local_lua_cfg = mainConfigurator.txtCfg
 
-        # NOTE that we must use the ct-gen Lua runtime, as Lua objects from
-        # different runtimes cannot interoperate (see Lupa docs). I.e. we
-        # cannot use mainConfigurator.textCfg
+        # About the model constants
+        ctgen_lua_cfg.constants.value_expression   = readAccessExprForGeometricConstant
+        ctgen_lua_cfg.constants.use_constexpr      = not local_lua_cfg.meta.constants.avoid_constexpr
+        ctgen_lua_cfg.constants.generate_local_defs= False
 
-        luaCfgFile = fileutils.open_utf8_reading(_lua_config_file_path)
-        local_lua_cfg = ctcppgen.luaRuntime.execute(luaCfgFile.read())
-        luaCfgFile.close()
-
-        # BEWARE of the entries that may have been overridden by the
-        # mainConfigurator (e.g. due to user flags), which are not reflected in
-        # the file; do not reference them, use the getters of mainConfigurator.
-        # For example:
-        ctgen_lua_cfg.constants.use_constexpr = not mainConfigurator.avoidConstexpr()
-
+        # About the joint state variable
         jointState_t = local_lua_cfg.types.jointState
         if mainConfigurator.templateAll() :
             ctgen_lua_cfg.tpl.template_all = True
@@ -153,17 +146,15 @@ class CTGenConfigurator(ctcppgen.config.Configurator):
             ctgen_scalar_t = ctgen_lua_cfg.internal.scalar_t
             jointState_t = jointState_t + '<' + ctgen_scalar_t + '>'
 
-        ctgen_lua_cfg.variables.status_type = jointState_t
-
-        ctgen_lua_cfg.constants.generate_local_defs        = False
-        ctgen_lua_cfg.variables.generate_local_status_type = False
-
         def jointStateAccess(variable):
             joint = robotKinematics.symVarToJoint[variable]
             idx   = mainConfigurator.robot.jointNum(joint)
             return local_lua_cfg.ids.jointStateFormalParameter + "(" + str(idx-1) + ")"
-        ctgen_lua_cfg.variables.status_formal_parameter = local_lua_cfg.ids.jointStateFormalParameter
-        ctgen_lua_cfg.variables.value_expression = jointStateAccess
+
+        ctgen_lua_cfg.variables.status_formal_parameter    = local_lua_cfg.ids.jointStateFormalParameter
+        ctgen_lua_cfg.variables.value_expression           = jointStateAccess
+        ctgen_lua_cfg.variables.status_type                = jointState_t
+        ctgen_lua_cfg.variables.generate_local_status_type = False
 
         ctgen_lua_cfg.scalar_traits.generate_local_def = False
         ctgen_lua_cfg.scalar_traits.use_default        = False
@@ -178,9 +169,6 @@ class CTGenConfigurator(ctcppgen.config.Configurator):
         current.members.update       = desired.members.update
         current.members.parameters   = desired.members.parameters
 
-        #ctgen_lua_cfg.constants.value_expression =\
-        #lambda constant : mainConfigurator.txtCfg.classes.constants + '::' + constant.name
-
         # The namespace configuration for the generators in the
         # `ctgen_backends.cpp_iitrbd` package, is a function taking the
         # transforms model object. In this case, we want to force the
@@ -193,9 +181,9 @@ class CTGenConfigurator(ctcppgen.config.Configurator):
         files = mainConfigurator.files
         include_files = [files.h_types, files.h_main, files.h_constants]
         includes = ['"{name}.h"'.format(name=file) for file in include_files]
-        ctgen_lua_cfg.external.includes = ctcppgen.luaRuntime.table_from(includes)
+        ctgen_lua_cfg.external.includes = lua.lua_runtime.table_from(includes)
 
-        ctgen_lua_cfg.files.include_dirs = lambda _ : ctcppgen.luaRuntime.table_from([])
+        ctgen_lua_cfg.files.include_dirs = lambda _ : lua.lua_runtime.table_from([])
 
         self.ctgen_text_generators_configuration = ctgen_lua_cfg
 

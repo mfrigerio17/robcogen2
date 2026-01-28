@@ -103,9 +103,10 @@ class Generator:
         #path.copy( self.fileWriter.basePath / fname ) # requires python 3.14
 
     def coordinateTransforms(self, ctModelMeta):
-        ctgenConfigurator = robcogen.cpp.config.CTGenConfigurator(self.robot.kinematics, self.configurator, ctModelMeta.ctModel)
-        luacfg = ctgenConfigurator.getTextGeneratorsConfiguration()
-        luacfg.constants.value_expression = self.constValueExprGenerator
+        aux = self.generators.constants.readAccessExprForGeometricConstant
+        ctgenConfigurator = robcogen.cpp.config.CTGenConfigurator(
+             self.robot.kinematics, self.configurator, ctModelMeta.ctModel, aux)
+
         ctgenerator = ctgencpp.Generator( ctgenConfigurator )
 
         matricesMetadata = self.transforms.allMatricesMetadata(MatrixRepresentation.homogeneous)
