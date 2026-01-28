@@ -13,8 +13,6 @@ local function ns_utils(ns_names)
 end
 
 
-cpputils = {
-  ns_utils = ns_utils
+return {
+  ns_utils = ns_utils,
 }
-
-rcg__cpputils = cpputils

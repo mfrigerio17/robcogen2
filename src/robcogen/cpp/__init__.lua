@@ -11,6 +11,7 @@ local function load_lua_modules(path)
             playground         = loadfile(path .. "/templates/playground.lua") (),
         },
         common = loadfile(path .. "/common.lua") (),
+        utils  = loadfile(path .. "/utils.lua") (),
     }
 end
 

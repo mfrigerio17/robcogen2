@@ -60,8 +60,4 @@ local function commons(robot, transforms, configurator)
     }
 end
 
-cppcommon = commons -- deprecate
-
-rcg__cppcommon = commons
-
 return commons
