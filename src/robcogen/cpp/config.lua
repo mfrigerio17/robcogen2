@@ -22,7 +22,8 @@ local config =
     ids = {
         joint = function(joint) return joint.name end,
         link  = function(link)  return link.name  end,
-        jointStateFormalParameter = 'q'
+        jointStateFormalParameter = 'q',
+        inertia_prop = function(link, property) return link.name .. '_' .. property.name end,
     },
     classes = {
         coreTypes = 'CoreTypes', -- used only when templating-everything
