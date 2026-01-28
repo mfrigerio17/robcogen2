@@ -72,11 +72,12 @@ local function allGenerators(robot, transforms, configurator)
         RCG = RCG,
     }
 
+    local generators_constants = RCG.cpp.generators.constants(robot, configurator, env)
     local ret = {
         common    = env.common, -- to let the caller inject something, possibly
         headers   = RCG.cpp.generators.core_headers(robot, configurator, env),
-        constants = RCG.cpp.generators.constants(robot, configurator, env),
-        inertia   = RCG.cpp.generators.inertia_properties(robot, configurator, env),
+        constants = generators_constants,
+        inertia   = RCG.cpp.generators.inertia_properties(robot, configurator, env, generators_constants.readAccessExprForInertiaConstant),
         --fd        = generators.fd.generators(robot, configurator, env),
         id        = RCG.cpp.generators.inverse_dynamics(robot, configurator, env),
         jsim      = RCG.cpp.generators.jsim(robot, configurator, env),

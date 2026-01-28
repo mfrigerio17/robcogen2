@@ -130,11 +130,11 @@ local source = [[
 {
 @for name,link in sorted_links(robot.isFloatingBase) do
 @   local ip = inertial_data.byLink(link)
-    com_«name» = «types.vec3»(«field_value(ip.com.x)», «field_value(ip.com.y)», «field_value(ip.com.z)»);
+    com_«name» = «types.vec3»(«field_value(ip.com.x, link, ipfield.comx)», «field_value(ip.com.y, link, ipfield.comy)», «field_value(ip.com.z, link, ipfield.comz)»);
     tensor_«name».fill(
-        «field_value(ip.mass)»,
+        «field_value(ip.mass, link, ipfield.mass)»,
         com_«name»,
-        «tensor_expression(ip)»
+        «tensor_expression(ip, link)»
     );
 @ end
 }
@@ -146,23 +146,23 @@ void «qualifier»::«NAMES.members.paramsUpdate»(const «meta.inertia_paramete
 @for link, flags in pairs(robot.inertia.parametric_flags) do
 @   local ip = inertial_data.byLink(link)
 @   if flags.allParametric() then
-    com_«link.name» = «types.vec3»(«field_value(ip.com.x)», «field_value(ip.com.y)», «field_value(ip.com.z)»);
+    com_«link.name» = «types.vec3»(«field_value(ip.com.x, link, ipfield.comx)», «field_value(ip.com.y, link, ipfield.comy)», «field_value(ip.com.z, link, ipfield.comz)»);
     tensor_«link.name».fill(
-        «field_value(ip.mass)»,
+        «field_value(ip.mass, link, ipfield.mass)»,
         com_«link.name»,
-        «tensor_expression(ip)»
+        «tensor_expression(ip, link)»
     );
 @else
 @ if flags.parametricMass() then
-    tensor_«link.name».changeMass(«field_value(ip.mass)»);
+    tensor_«link.name».changeMass(«field_value(ip.mass, link, ipfield.mass)»);
 @ end
 @ if flags.parametricCoM() then
-    com_«link.name» = «types.vec3»(«field_value(ip.com.x)», «field_value(ip.com.y)», «field_value(ip.com.z)»);
+    com_«link.name» = «types.vec3»(«field_value(ip.com.x, link, ipfield.comx)», «field_value(ip.com.y, link, ipfield.comy)», «field_value(ip.com.z, link, ipfield.comz)»);
     tensor_«link.name».changeCOM(com_«link.name»);
 @ end
 @ if flags.parametricTensor() then
     tensor_«link.name».changeRotationalInertia(
-        «tensor_expression(ip)»
+        «tensor_expression(ip, link)»
     );
 @ end
 @ end
@@ -172,14 +172,15 @@ void «qualifier»::«NAMES.members.paramsUpdate»(const «meta.inertia_paramete
 ]]
 
 
-local function generators_inertia_properties(robot, configurator, given_env)
+local function generators_inertia_properties(robot, configurator, given_env, gen_constant_read_access_expr)
     -- shallow copy the template environment
     local env = {}
     for k,v in pairs(given_env) do
         env[k] = v
     end
+    env.ipfield = RCG.enums.IPField
 
-    local field_value = function( expr )
+    local field_value = function(expr, link, ipfield)
         if type(expr) == 'number' then
             return expr
         end
@@ -191,19 +192,17 @@ local function generators_inertia_properties(robot, configurator, given_env)
             }
             return configurator.symbolicExpressionToCode(expr.expr, replacements )
         end
-        local replacements = {
-            [expr.arg.symbol] = env.common.constantValueAccess(expr.arg)
-        }
-        return configurator.symbolicExpressionToCode(expr.expr, replacements )
+        -- it is a constant
+        return gen_constant_read_access_expr(link, ipfield)
     end
 
-    local tensor_expression = function (ip)
-        local ixx = field_value(ip.moments.ixx)
-        local ixy = field_value(ip.moments.ixy)
-        local ixz = field_value(ip.moments.ixz)
-        local iyy = field_value(ip.moments.iyy)
-        local iyz = field_value(ip.moments.iyz)
-        local izz = field_value(ip.moments.izz)
+    local tensor_expression = function(ip, link)
+        local ixx = field_value(ip.moments.ixx, link, env.ipfield.ixx)
+        local ixy = field_value(ip.moments.ixy, link, env.ipfield.ixy)
+        local ixz = field_value(ip.moments.ixz, link, env.ipfield.ixz)
+        local iyy = field_value(ip.moments.iyy, link, env.ipfield.iyy)
+        local iyz = field_value(ip.moments.iyz, link, env.ipfield.iyz)
+        local izz = field_value(ip.moments.izz, link, env.ipfield.izz)
         return env.ns_iit_rbd.qualifier..'::Utils::buildInertiaTensor<'..
               env.types.scalar..
         '>('..ixx..','..iyy..','..izz..','..ixy..','..ixz..','..iyz..')'
