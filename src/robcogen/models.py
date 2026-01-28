@@ -16,7 +16,6 @@ import kgprim.ct.repr.mxrepr as mxrepr
 from kgprim.ct.repr.mxrepr import MatrixRepresentation
 from kgprim.ct.repr.mxrepr import MatrixReprMetadata
 
-import robcogen.luabridge as lua
 from robcogen import logger
 
 
