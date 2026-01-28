@@ -2,8 +2,10 @@ import pathlib
 import lupa
 
 import robcogen.utils.files as fileutils
+from robcogen.models import IPField
 from kgprim.ct.repr.mxrepr import MatrixRepresentation
 from robmodel.connectivity import JointKind
+
 
 lua_runtime = lupa.LuaRuntime(unpack_returned_tuples=True)
 
@@ -24,6 +26,7 @@ function(basepath)
         enums = {
             MatrixRepresentation = python.eval('MatrixRepresentation'),
             JointKind = python.eval('JointKind'),
+            IPField = python.eval('IPField'),
         },
         utils = {
             templates = loadfile(basepath .. "/utils/templates.lua")(),
