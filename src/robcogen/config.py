@@ -2,8 +2,7 @@ import pathlib
 from robcogen.utils.files import FileWriter
 
 default_config = {
-    'outdir' : '/tmp/rcgen2',
-    'constant_folding' : False,
+    'outdir' : '/tmp/rcgen2'
 }
 
 class Configurator:
@@ -27,10 +26,6 @@ class Configurator:
 
     def getOutputPath(self, robot):
         return self.data['outdir']
-
-    @property
-    def constantFolding(self):
-        return self.data['constant_folding']
 
     @property
     def floatingBase(self):

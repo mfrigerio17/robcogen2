@@ -8,7 +8,6 @@ import ctgen_backends.cpp_iitrbd.config
 from robmodel.connectivity import JointKind as JointKind
 
 import robcogen.luabridge as lua
-import robcogen.constants
 import robcogen.vpc
 import robcogen.utils.files as fileutils
 

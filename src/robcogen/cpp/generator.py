@@ -11,7 +11,6 @@ import ctgen_backends.cpp_iitrbd.generator as ctgencpp
 
 import robcogen.luabridge as lua
 import robcogen.core
-import robcogen.constants
 import robcogen.vpc
 import robcogen.utils.files as fileutils
 import robcogen.cpp.config
@@ -39,28 +38,6 @@ class Generator:
         luat = self._loadLuaModule('generator.lua')
 
         self.generators = luat.generators(self.robot, transforms, configurator)
-
-        self.constValueExprGenerator = self._getConstantValueExprGenerator()
-        self.generators.common.constantValueAccess = self.constValueExprGenerator
-
-
-    def _getConstantValueExprGenerator(self):
-        mc = self.configurator.txtCfg.meta.constants["class"]
-        scalar_t = self.configurator.txtCfg.types.scalar
-
-        getter = None
-        if self.configurator.templateAll() :
-            getter = lambda constant: ('{mc}<{scalar}>::{name}'.format(mc=mc, scalar=scalar_t, name=constant.name))
-        else :
-            getter = lambda constant : (mc + '::' + constant.name)
-            # ignore the scalar argument
-        aux = DictDot(
-            valueExpression = getter,
-            piExpression    = lambda ___ : 'std::M_PI'
-        )
-        ca = robcogen.constants.ConstantsAccess(aux, self.configurator.constantFolding)
-        return ca.valueExpression
-
 
     def _loadLuaModule(self, filename):
         luaCodeSrc = open( os.path.join( _path_here, filename), "r")
