@@ -1,3 +1,4 @@
+import sympy.printing
 import robcogen.luabridge
 import robcogen.vpc
 from robcogen.utils.format import FloatsFormatter
@@ -26,5 +27,5 @@ class Configurator:
         return self.namespaces_
 
     def symbolicExpressionToCode(self, symb_expr, replacements):
-        return robcogen.vpc.symbolicExpressionToCode(symb_expr, replacements)
+        return robcogen.vpc.symbolicExpressionToCode(symb_expr, replacements, sympy.printing.octave_code)
 

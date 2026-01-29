@@ -1,4 +1,5 @@
 import os
+import sympy
 from types import SimpleNamespace as DictDot
 
 import ctgen_backends.cpp_iitrbd as ctcppgen
@@ -90,7 +91,7 @@ class Configurator:
         return self.data.constantFolding
 
     def symbolicExpressionToCode(self, symb_expr, replacements):
-        return robcogen.vpc.symbolicExpressionToCode(symb_expr, replacements)
+        return robcogen.vpc.symbolicExpressionToCode(symb_expr, replacements, sympy.printing.cxxcode)
 
     def templateAll(self): return self.do_template_all
 
