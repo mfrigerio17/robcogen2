@@ -72,6 +72,7 @@ class Configurator:
             playground = 'playground',
             test_cmdline_id = 'test_id',
             test_cmdline_jsim = 'test_jsim',
+            test_cmdline_fd = 'test_fd',
             test_consistency = 'test_consistency',
         )
 

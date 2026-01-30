@@ -31,12 +31,14 @@ set(HEADERS
     ./«headers.constants»
     ./«headers.inv_dyn»
     ./«headers.jsim»
+    ./«headers.fwd_dyn»
 @if templateAll then
     ./«impl_files.constants»
     ./«impl_files.transforms»
     ./«impl_files.inertia»
     ./«impl_files.inv_dyn»
     ./«impl_files.jsim»
+    ./«impl_files.fwd_dyn»
 )
 @else
 )
@@ -47,6 +49,7 @@ set(SOURCES
     ./«impl_files.inertia»
     ./«impl_files.inv_dyn»
     ./«impl_files.jsim»
+    ./«impl_files.fwd_dyn»
 )
 
 # Add library
@@ -68,10 +71,12 @@ target_link_libraries(playground ${LIB_NAME})
 # Tests
 add_executable(test-id    tests/«impl_files.test_cmdline_id»)
 add_executable(test-jsim  tests/«impl_files.test_cmdline_jsim»)
+add_executable(test-fd    tests/«impl_files.test_cmdline_fd»)
 add_executable(test-cons  tests/«impl_files.test_consistency»)
 
 target_link_libraries(test-id   ${LIB_NAME})
 target_link_libraries(test-jsim ${LIB_NAME})
+target_link_libraries(test-fd   ${LIB_NAME})
 target_link_libraries(test-cons ${LIB_NAME})
 ]]
 

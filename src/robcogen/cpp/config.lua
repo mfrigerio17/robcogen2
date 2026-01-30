@@ -139,6 +139,22 @@ config.meta.inverse_dynamics = {
     },
 }
 
+config.meta.forward_dynamics = {
+    class = 'ForwardDynamics',
+    members = {
+        ip = 'ip',
+        xt = 'xt',
+        jsim_inverse = 'jsim_inverse'
+    },
+    params = {
+        q= "q", qd= "qd", qdd= "qdd", tau= "tau",
+        basea_in= "base_a", basef= "base_f", g= "gravity",
+        fext= "fext"
+    },
+    local_types = {
+        fext = config.types.externalForces,
+    },
+}
 
 
 return config

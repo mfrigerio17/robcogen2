@@ -103,11 +103,11 @@ class Generator:
         self._genFile(ok, text, self.configurator.implFileName(basename))
 
     def dynamics(self):
-        # basename = self.configurator.files.h_fwd_dyn
-        # ok, text = self.generators.fd.header()
-        # self._genFile(ok, text, self.configurator.headerFileName(basename))
-        # ok, text = self.generators.fd.impl()
-        # self._genFile(ok, text, self.configurator.implFileName(basename))
+        basename = self.configurator.files.h_fwd_dyn
+        ok, text = self.generators.fd.header()
+        self._genFile(ok, text, self.configurator.headerFileName(basename))
+        ok, text = self.generators.fd.source()
+        self._genFile(ok, text, self.configurator.implFileName(basename))
 
         basename = self.configurator.files.h_inv_dyn
         ok, text = self.generators.id.header()
@@ -135,8 +135,10 @@ class Generator:
         ok, text = self.generators.tests.test_jsim()
         self._genFile(ok, text, self.configurator.files.test_cmdline_jsim+'.cpp')
 
+        ok, text = self.generators.tests.test_fd()
+        self._genFile(ok, text, self.configurator.files.test_cmdline_fd+'.cpp')
+
         ok, text = self.generators.tests.test_consistency()
         self._genFile(ok, text, self.configurator.files.test_consistency+'.cpp')
-
 
         self.fileWriter = originalWriter

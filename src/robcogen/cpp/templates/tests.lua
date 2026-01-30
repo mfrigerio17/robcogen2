@@ -64,12 +64,49 @@ int main(int argc, char** argv)
 }
 ]]
 
+local fd = [[
+#include <iit/robcogen/test/cmdline_fd.h>
+#include <«headers.inertia»>
+#include <«headers.transforms»>
+#include <«headers.fwd_dyn»> // TODO add the installation path
+#include <«headers.traits»>  // TODO add the installation path
+
+/**
+ * This program calls the generated implementation of Forward Dynamics, and
+ * prints the result (i.e. the joint forces) on stdout.
+ *
+ * It requires all inputs to be given as command line arguments; there are «3*robot.DOFs»
+ * arguments, for the position, velocity and force of each joint of
+ * the robot. Group the arguments by type, not by joint.
+ */
+int main(int argc, char** argv)
+{
+    using namespace «ns.qualifier»;
+
+@if robot.hasParametricGeometry then
+    «meta.transforms_container.class»«tplscalar» xt{ModelParameters«tplscalar»()};
+@else
+    «meta.transforms_container.class»«tplscalar» xt{};
+@end
+    «meta.inertia_properties.class»«tplscalar» ip;
+    «meta.forward_dynamics.class»«tplscalar» solver(ip, xt);
+
+@if robot.isFloatingBase then
+    iit::robcogen::test::cmdline_fd_fb< Traits«tplscalar» >(argc, argv, solver);
+@else
+    iit::robcogen::test::cmdline_fd< Traits«tplscalar» >(argc, argv, solver);
+@end
+    return 0;
+}
+]]
+
 local consistency = [[
 #include <iit/robcogen/test/dynamics_consistency.h>
 #include <«headers.inertia»>
 #include <«headers.transforms»>
 #include <«headers.inv_dyn»>
 #include <«headers.jsim»>
+#include <«headers.fwd_dyn»>
 #include <«headers.traits»>  // TODO add the installation path
 
 /**
@@ -94,14 +131,16 @@ int main(int argc, char** argv)
     «meta.inertia_properties.class»«tplscalar» ip;
     «meta.inverse_dynamics.class»«tplscalar» id(ip, xt);
     «meta.jsim.class»«tplscalar» jsim(ip, xt);
-
+    «meta.forward_dynamics.class»«tplscalar» fd(ip, xt);
 
 @if robot.isFloatingBase then
     iit::robcogen::test::floatingBaseID< Traits«tplscalar» >(id);
     iit::robcogen::test::floatingBaseJSIM< Traits«tplscalar» >(id, jsim);
+    iit::robcogen::test::floatingBaseFD< Traits«tplscalar» >(fd, id);
 @else
     iit::robcogen::test::fixedBaseID< Traits«tplscalar» >(id);
     iit::robcogen::test::fixedBaseJSIM< Traits«tplscalar» >(id, jsim);
+    iit::robcogen::test::fixedBaseFD< Traits«tplscalar» >(fd, id);
 @end
 
     return 0;
@@ -118,6 +157,7 @@ local function generator_tests(robot, configurator, env)
     return {
         test_id = function() return RCG.utils.templates.tpl_eval(id, env) end,
         test_jsim = function() return RCG.utils.templates.tpl_eval(jsim, env) end,
+        test_fd = function() return RCG.utils.templates.tpl_eval(fd, env) end,
         test_consistency = function() return RCG.utils.templates.tpl_eval(consistency, env) end,
     }
 end

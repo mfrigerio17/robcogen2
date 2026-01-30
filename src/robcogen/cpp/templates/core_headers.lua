@@ -115,7 +115,7 @@ local traits = [[
 #include "«headers.types»"
 #include "«headers.inertia»"
 #include "«headers.transforms»"
-//#include "«headers.fwd_dyn»"
+#include "«headers.fwd_dyn»"
 #include "«headers.inv_dyn»"
 #include "«headers.jsim»"
 #include "data_map.h"
@@ -142,9 +142,9 @@ struct Traits
     using Transforms =  typename «ns.qualifier»::«classes.transforms»«tpl.suffix»;
 
     using InertiaProperties = typename «ns.qualifier»::InertiaProperties«tpl.suffix»;
-    //typedef typename «ns.qualifier»::ForwardDynamics FwdDynEngine;
     using InvDynEngine = typename «ns.qualifier»::InverseDynamics«tpl.suffix»;
     using JSIM = typename «ns.qualifier»::JSIM«tpl.suffix»;
+    using FwdDynEngine = typename «ns.qualifier»::ForwardDynamics«tpl.suffix»;
 
     static inline constexpr const JointID* orderedJointIDs() {
         return «ns.qualifier»::orderedJointIDs;
