@@ -18,12 +18,12 @@ int main(int argc, char** argv)
     using namespace «ns.qualifier»;
 
 @if robot.hasParametricGeometry then
-    Transforms«tplscalar» xt{ModelParameters«tplscalar»()};
+    «meta.transforms_container.class»«tplscalar» xt{ModelParameters«tplscalar»()};
 @else
-    Transforms«tplscalar» xt{};
+    «meta.transforms_container.class»«tplscalar» xt{};
 @end
-    InertiaProperties«tplscalar» ip;
-    InverseDynamics«tplscalar» id(ip, xt);
+    «meta.inertia_properties.class»«tplscalar» ip;
+    «meta.inverse_dynamics.class»«tplscalar» id(ip, xt);
 
 @if robot.isFloatingBase then
     iit::robcogen::test::cmdline_id_fb< Traits«tplscalar» >(argc, argv, id);
@@ -52,12 +52,12 @@ int main(int argc, char** argv)
     using namespace «ns.qualifier»;
 
 @if robot.hasParametricGeometry then
-    Transforms«tplscalar» xt{ModelParameters«tplscalar»()};
+    «meta.transforms_container.class»«tplscalar» xt{ModelParameters«tplscalar»()};
 @else
-    Transforms«tplscalar» xt{};
+    «meta.transforms_container.class»«tplscalar» xt{};
 @end
-    InertiaProperties«tplscalar» ip;
-    JSIM«tplscalar» jsim(ip, xt);
+    «meta.inertia_properties.class»«tplscalar» ip;
+    «meta.jsim.class»«tplscalar» jsim(ip, xt);
 
     iit::robcogen::test::cmdline_jsim< Traits«tplscalar» >(argc, argv, jsim);
     return 0;
@@ -87,13 +87,14 @@ int main(int argc, char** argv)
 {
     using namespace «ns.qualifier»;
 @if robot.hasParametricGeometry then
-    Transforms«tplscalar» xt{ModelParameters«tplscalar»()};
+    «meta.transforms_container.class»«tplscalar» xt{ModelParameters«tplscalar»()};
 @else
-    Transforms«tplscalar» xt{};
+    «meta.transforms_container.class»«tplscalar» xt{};
 @end
-    InertiaProperties«tplscalar» ip;
-    InverseDynamics«tplscalar» id(ip, xt);
-    JSIM«tplscalar» jsim(ip, xt);
+    «meta.inertia_properties.class»«tplscalar» ip;
+    «meta.inverse_dynamics.class»«tplscalar» id(ip, xt);
+    «meta.jsim.class»«tplscalar» jsim(ip, xt);
+
 
 @if robot.isFloatingBase then
     iit::robcogen::test::floatingBaseID< Traits«tplscalar» >(id);
