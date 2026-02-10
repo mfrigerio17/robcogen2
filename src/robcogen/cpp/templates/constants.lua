@@ -22,17 +22,24 @@ ${ns.close}
 ]]
 
 local impl_template = [[
-@ -- when using constexpr, the source file is unnecessary, we leave it empty
-@if meta.constants.avoid_constexpr then
-@   if not templateAll then
+@if not templateAll then
 #include "«headers.constants»"
 
 using «ns.qualifier»::«types.scalar»;
-@   end
+@end
 
-@   for _, constant in ipairs(constants) do
+@if not meta.constants.avoid_constexpr then
+#if __cplusplus < 201703L
+
+// https://en.cppreference.com/w/cpp/language/static.html#Constant_static_members
+@end
+
+@for _, constant in ipairs(constants) do
 $<constant_definition>
-@   end
+@end
+
+@if not meta.constants.avoid_constexpr then
+#endif
 @end
 ]]
 
@@ -103,7 +110,7 @@ local function generators_constants(robot, configurator, given_env)
 
     -- The sub-templates for the declaration/definition of a constant
     local declaration = 'static constexpr «types.scalar» «constant.name»{«constant.value»};'
-    local definition  = ''
+    local definition  = '«tpl»constexpr «types.scalar» «ns.qualifier»::«classqualifier»::«constant.name»;'
     if env.meta.constants.avoid_constexpr then
         declaration = 'static const «types.scalar» «constant.name»;'
         definition  = '«tpl»const «types.scalar» «ns.qualifier»::«classqualifier»::«constant.name»{«constant.value»};'
