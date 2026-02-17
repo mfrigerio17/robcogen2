@@ -6,6 +6,9 @@ import robcogen.octave as octave
 import robcogen.octave.generator
 import robcogen.octave.config
 
+import robcogen.test.generator
+from robcogen.luabridge import lua_runtime
+
 class Generator:
     def __init__(self, configurator, robotGeometry, robotInertia, userDesiredTransforms):
         self.robot      = robcogen.models.RobotModel(robotGeometry, robotInertia, configurator.floatingBase)
@@ -33,3 +36,8 @@ class Generator:
         octgen.inverseDynamics()
         octgen.RoysModel()
         octgen.initFunction()
+
+    def generateTestScripts(self):
+        generator = robcogen.test.generator.Generator(self.robot, lua_runtime)
+        generator.generate(self.fileWriter)
+

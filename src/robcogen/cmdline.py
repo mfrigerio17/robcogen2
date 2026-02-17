@@ -40,6 +40,7 @@ def main():
 
     argparser.add_argument('--cpp',    dest='cpp',   action='store_true', help='generate C++ code')
     argparser.add_argument('--octave', dest='octave',action='store_true', help='generate octave code')
+    argparser.add_argument('--tests',  dest='tests', action='store_true', help='generate helper test scripts')
 
     rmtool.setRobotArgs(argparser)
 
@@ -58,4 +59,6 @@ def main():
         core.generateCPP()
     if args.octave:
         core.generateOctave()
+    if args.tests:
+        core.generateTestScripts()
 
