@@ -61,7 +61,7 @@ local config = {
             },
         },
         func_roys_model = {
-            name = function(robot) return robot.name .. "RoyModel" end,
+            name = function(robot) return "RoyModel" end,
             args = {
                 inertia_constants   = "mic",
                 inertia_parameters  = "mip",
