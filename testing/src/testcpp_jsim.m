@@ -1,8 +1,7 @@
-
 %% Test of the C++ algorithm for the Joint Space Inertia Matrix (JSIM) generated
 %% by RobCoGen, for fixed base robots.
 %%
-%% Usage: [ROY ME] = testcpp_jsim(ROY_MODEL, EXE)
+%% Usage: [ROY, ME] = testcpp_jsim(ROY_MODEL, EXE)
 %%
 %% ROY_MODEL is the robot model (a data structure) in Roy's format.
 %%
@@ -12,7 +11,7 @@
 %% joint status vector.
 %%
 %% That is, the program must be executable in this form:
-%%    "<exe> q0 q1 .. qn"
+%%    "EXE q0 q1 .. qn"
 %%
 %% See readme.md for more information and general documentation on the inputs
 %% of this function.
@@ -20,7 +19,6 @@
 %% Author: Marco Frigerio
 %
 %%% This file is part of the Octave test functions for RobCoGen.
-%%% See the LICENSE file for more information.
 
 function [roy me] = testcpp_jsim(roy_model, exe)
 
