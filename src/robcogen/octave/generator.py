@@ -46,9 +46,6 @@ class Generator:
         ok, text = self.generators.inertia_properties()
         self._genFile(ok, text, self.txtcfg.meta.class_inertia_properties.name+".m" )
 
-        ok, text = self.generators.composite_inertia()
-        self._genFile(ok, text, self.txtcfg.meta.func_composite_inertia.name+".m" )
-
         # copy the static files to the destination directory
         path = path_here / "static/RigidBodyInertia.m"
         with fileutils.open_utf8_reading(path) as content:
@@ -83,6 +80,10 @@ class Generator:
 
         ok, text = self.generators.inverse_dynamics(matricesMetadata)
         self._genFile(ok, text, self.txtcfg.meta.func_inverse_dynamics.name+".m" )
+
+    def jsim(self):
+        ok, text = self.generators.jsim()
+        self._genFile(ok, text, self.txtcfg.meta.class_jsim.name+".m" )
 
     def RoysModel(self):
         xtree_data = roy.buildXTreeData(self.robot)

@@ -45,19 +45,28 @@ local config = {
                 update_all = "updateAll",
             }
         },
-        func_composite_inertia = {
-            name = "compositeInertia",
-            args = {
-                ip = "ip",
-                transforms = "xf",
-            },
-        },
         func_inverse_dynamics = {
             name = "inverseDynamics",
             args = {
                 ip = "ip",
                 transforms = "xm",
                 q="q", qd="qd", qdd="qdd", fext="fext",
+            },
+        },
+        class_jsim = {
+            name = "CompositeInertia",
+            ctor = {
+                inertia = "ip",
+                transforms = "xm",
+            },
+            members = {
+                inertia = "ip",
+                transforms = "xm",
+                H = "H",
+                F = "F", -- only for floating bases
+            },
+            methods = {
+                update_ci = "update_composite_inertia",
             },
         },
         func_roys_model = {

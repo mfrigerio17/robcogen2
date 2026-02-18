@@ -115,7 +115,8 @@ vcross = vcross_mx(«ids.vel(base)»);
 %
 % Pass 2. Compute the composite inertia and the spatial forces
 %
-ci = «ns_qualifier»«meta.func_composite_inertia.name»(«here.args.ip», «here.args.transforms», 'motion');
+ci = «ns_qualifier»«meta.class_jsim.name»(«here.args.ip», «here.args.transforms»);
+ci.«meta.class_jsim.methods.update_ci»();
 @   for name,link in sorted_links_reversed() do
 @       local parent = robot.treeutils.parent(link)
 «ids.force(parent)» = «ids.force(parent)» + «child_mx_parent(link)»' * «ids.force(link)»;

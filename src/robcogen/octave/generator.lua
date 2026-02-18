@@ -146,23 +146,6 @@ local function getAllGenerators(robot, transforms, configurator)
     end
 
 
-    local function generator_composite_inertia()
-        local meta = txtConfig.meta
-        local initializer_list = {}
-        for name,link in iterutils.sorted_links(robot, "include_base_if_floating") do
-            table.insert(initializer_list, "'"..txtConfig.ids.dyn_vars.Ic(link).."'")
-            table.insert(initializer_list, string.format("%s.%s.tensor6D",
-                meta.func_composite_inertia.args.ip,
-                meta.class_inertia_properties.members.linkip(link)) )
-        end
-        env.thisFunc = meta.func_composite_inertia
-        env.struct_init_list = initializer_list
-        env.ids  = txtConfig.ids.dyn_vars
-        local ok,text = genutils.tpl_eval(templates.composite_inertia, env)
-        return ok,text
-    end
-
-
     local function generator_inverse_dynamics(allMatricesMetadata)
         env.spatialVelDueToJointOnly = function(joint, qd_var_name, jid)
             local i = commons.spatialVectorIndex(joint)
@@ -179,6 +162,21 @@ local function getAllGenerators(robot, transforms, configurator)
             return env.here.args.transforms..'.'..env.meta.class_transforms_container.members.individual_tf( link_XM_parent(link) )..'.mx'
         end
         local ok,text = genutils.tpl_eval(templates.inverse_dynamics, env)
+        return ok,text
+    end
+
+
+    local function generator_jsim()
+        local myenv = {}
+        for k,v in pairs(env) do myenv[k] = v  end
+
+        myenv.thisclass = env.meta.class_jsim
+        myenv.link_XM_parent = function(link)
+            return env.meta.class_jsim.members.transforms .. '.' ..
+                     env.meta.class_transforms_container.members.individual_tf(
+                                                  link_XM_parent(link) )
+        end
+        local ok,text = genutils.tpl_eval(templates.jsim, myenv)
         return ok,text
     end
 
@@ -236,8 +234,8 @@ local function getAllGenerators(robot, transforms, configurator)
         inertia_parameters = generator_inertia_parameters,
         inertia_properties = generator_inertia_properties,
         transforms_container = generator_transforms_container,
-        composite_inertia  = generator_composite_inertia,
         inverse_dynamics   = generator_inverse_dynamics,
+        jsim               = generator_jsim,
         roys_model         = generator_roys_model,
         init_function      = generator_init_function,
     }
