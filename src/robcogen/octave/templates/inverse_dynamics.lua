@@ -25,7 +25,7 @@ end
 %
 % Pass 1. Forward propagate velocities and accelerations
 %
-@for name,link in sorted_links(robot) do
+@for name,link in sorted_links() do
 @  local parent   = robot.treeutils.parent(link)
 @  local myJoint  = robot.treeutils.supportingJoint(link)
 @  local velocity = ids.vel(link)
@@ -91,7 +91,7 @@ vcross = vcross_mx(«velocity»);
 % Pass 2. Compute the joint torques while back propagating the spatial forces
 %
 tau = zeros(size(«here.args.qd»));
-@  for name,link in sorted_links_reversed(robot) do
+@  for name,link in sorted_links_reversed() do
 
 % Link '«name»'
 @    local parent = robot.treeutils.parent(link)
@@ -116,11 +116,9 @@ vcross = vcross_mx(«ids.vel(base)»);
 % Pass 2. Compute the composite inertia and the spatial forces
 %
 ci = «ns_qualifier»«meta.func_composite_inertia.name»(«here.args.ip», «here.args.transforms», 'motion');
-@   for name,link in sorted_links_reversed(robot) do
+@   for name,link in sorted_links_reversed() do
 @       local parent = robot.treeutils.parent(link)
-@       if parent then
 «ids.force(parent)» = «ids.force(parent)» + «child_mx_parent(link)»' * «ids.force(link)»;
-@       end
 @   end
 
 %
@@ -132,7 +130,7 @@ ci = «ns_qualifier»«meta.func_composite_inertia.name»(«here.args.ip», «he
 % Pass 3. Compute the joint forces while propagating back the floating base acceleration
 %
 tau = zeros(size(«here.args.qd»));
-@ for name,link in sorted_links(robot) do
+@ for name,link in sorted_links() do
 @    local parent = robot.treeutils.parent(link)
 @    local joint  = robot.treeutils.supportingJoint(link)
 @    local idx    = commons.spatialVectorIndex(joint)

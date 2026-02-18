@@ -5,7 +5,7 @@ classdef «here.name» < handle
 
 properties
     «here.members.constants»
-@ for _, link in sorted_links(robot, "include_base_if_floating") do
+@ for _, link in sorted_links(robot.isFloatingBase) do
     «here.members.linkip(link)»
 @ end
 end
@@ -13,7 +13,7 @@ end
 methods
     function obj = «here.name»(«here.farguments.model_constants», «here.farguments.model_parameters»)
         obj.«here.members.constants» = «here.farguments.model_constants»;
-@ for name, link in sorted_links(robot, "include_base_if_floating") do
+@ for name, link in sorted_links(robot.isFloatingBase) do
 @   local ip = inertial_data.byLinkName(name)
         obj.«here.members.linkip(link)» = «ns_qualifier»RigidBodyInertia(...
             «valueof(ip.mass)»,...

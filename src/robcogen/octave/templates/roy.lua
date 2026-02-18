@@ -36,20 +36,20 @@ for i = 1:6
     «thisfunc.ret_val».Xtree{i} = eye(6);
 end
 
-@    for name,link in sorted_links(robot) do
+@    for name,link in sorted_links() do
 @       local id = commons.linkArrayIndex(link)
 «thisfunc.ret_val».parent(«id+5») = «commons.linkArrayIndex(robot.treeutils.parent(link))+5»;
 @    end
 
-@    for _,joint in pairs(robot.tree.joints) do
+@    for _,joint in sorted_joints() do
 «thisfunc.ret_val».jtype{«commons.jointStateVectorIndex(joint)»+6} = «jointType(joint)»;
 @    end
 
-@    for _,joint in pairs(robot.tree.joints) do
+@    for _,joint in sorted_joints() do
 «thisfunc.ret_val».Xtree{«commons.jointStateVectorIndex(joint)»+6} = «xtree(joint)»;
 @    end
 
-@    for name,link in sorted_links(robot, "include_base_if_floating") do
+@    for name,link in sorted_links(robot.isFloatingBase) do
 @       local id = commons.linkArrayIndex(link)
 @             ip = inertial_data.byLink(link)
 I = «ns_qualifier»RigidBodyInertia.makeTensor3D(«valueof(ip.moments.ixx)»,«valueof(ip.moments.iyy)»,«valueof(ip.moments.izz)»,«valueof(ip.moments.ixy)»,«valueof(ip.moments.ixz)»,«valueof(ip.moments.iyz)»);
@@ -60,20 +60,20 @@ I = «ns_qualifier»RigidBodyInertia.makeTensor3D(«valueof(ip.moments.ixx)»,«
 «thisfunc.ret_val».NB = «robot.tree.nB-1»;
 «thisfunc.ret_val».parent = zeros(1, «robot.tree.nB-1»);
 
-@    for name,link in sorted_links(robot) do
+@    for name,link in sorted_links() do
 @       local id = commons.linkArrayIndex(link)
 «thisfunc.ret_val».parent(«id») = «commons.linkArrayIndex(robot.treeutils.parent(link))»;
 @    end
 
-@    for _,joint in pairs(robot.tree.joints) do
+@    for _,joint in sorted_joints() do
 «thisfunc.ret_val».jtype{«commons.jointStateVectorIndex(joint)»} = «jointType(joint)»;
 @    end
 
-@    for _,joint in pairs(robot.tree.joints) do
+@    for _,joint in sorted_joints() do
 «thisfunc.ret_val».Xtree{«commons.jointStateVectorIndex(joint)»} = «xtree(joint)»;
 @    end
 
-@    for name,link in sorted_links(robot) do
+@    for name,link in sorted_links() do
 @       local id = commons.linkArrayIndex(link)
 @       local ip = inertial_data.byLink(link)
 I = «ns_qualifier»RigidBodyInertia.makeTensor3D(«valueof(ip.moments.ixx)»,«valueof(ip.moments.iyy)»,«valueof(ip.moments.izz)»,«valueof(ip.moments.ixy)»,«valueof(ip.moments.ixz)»,«valueof(ip.moments.iyz)»);

@@ -23,7 +23,7 @@ ret = struct(«table.concat(struct_init_list, ",")»);
 %     each link, for the current configuration:
 %
 if strcmp(transformsType, 'motion')  % we have transforms for motion vectors
-@for name,link in sorted_links_reversed(robot) do
+@for name,link in sorted_links_reversed() do
 @   local parent = robot.treeutils.parent(link)
 @   if robot.isFloatingBase or ( parent~=robot.tree.base ) then
 @       local child_X_parent = thisFunc.args.transforms..'.'..meta.class_transforms_container.members.individual_tf( link_XM_parent(link) )..'.mx'
@@ -34,7 +34,7 @@ ret.«ids.Ic(parent)» = ret.«ids.Ic(parent)» + «child_X_parent»' * ret.«id
 @end
 
 else % we have transforms for force vectors
-@for name,link in sorted_links(robot) do
+@for name,link in sorted_links() do
 @   local parent = robot.treeutils.parent(link)
 @   if robot.isFloatingBase or ( parent~=robot.tree.base ) then
 @       local child_X_parent = thisFunc.args.transforms..'.'..meta.class_transforms_container.members.individual_tf( link_XF_parent(link) )..'.mx'
