@@ -7,7 +7,7 @@ local commonsFactory = RCG.octave.commons
 
 local function getAllGenerators(robot, transforms, configurator)
     local _,heading = genutils.tpl_eval(templates.heading,
-        {date=os.date(),model_name=robot.name},
+        {model_name=robot.name},
         {returnTable=true})
 
     local txtConfig = configurator.getTextTemplatesConfig()
