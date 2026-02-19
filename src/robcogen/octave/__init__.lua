@@ -11,6 +11,7 @@ local function load_lua_modules(path, path_ctgen)
             forward_dynamics   = loadfile(path .. "/templates/forward_dynamics.lua") (),
             roys_model         = loadfile(path .. "/templates/roy.lua") (),
             init_function      = loadfile(path .. "/templates/init_function.lua") (),
+            test_script        = loadfile(path .. "/templates/test_script.lua") (),
         },
         commons = loadfile(path .. "/commons.lua")(),
         text_cfg = loadfile(path .. "/config.lua")(),

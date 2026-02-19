@@ -243,6 +243,22 @@ local function getAllGenerators(robot, transforms, configurator)
         return ok,text
     end
 
+
+    local function generator_test_script()
+        env.tests = {
+            id = "test_id",
+            jsim = "test_jsim",
+            fd = "test_fd",
+        }
+        if robot.isFloatingBase then
+            for k,v in pairs(env.tests) do
+                env.tests[k] = v .. "_fb"
+            end
+        end
+        local ok,text = genutils.tpl_eval(templates.test_script, env)
+        return ok,text
+    end
+
     return {
         inertia_constants  = generator_inertia_constants,
         geometry_parameters= generator_geometry_parameters,
@@ -254,6 +270,7 @@ local function getAllGenerators(robot, transforms, configurator)
         forward_dynamics   = generator_forward_dynamics,
         roys_model         = generator_roys_model,
         init_function      = generator_init_function,
+        test_script        = generator_test_script,
     }
 end
 

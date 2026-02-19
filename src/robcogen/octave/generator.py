@@ -24,6 +24,7 @@ class Generator:
         self.robot = robot
         self.transforms = transforms
         self.configurator = configurator
+        self.fileWriterRoot = fileWriter
         self.fileWriter = fileWriter.subDir(
                             fileutils.compose_paths(
                                 ["+"+d for d in configurator.namespaces ] ))
@@ -97,6 +98,12 @@ class Generator:
     def initFunction(self):
         ok, text = self.generators.init_function()
         self._genFile(ok, text, self.txtcfg.meta.func_init.name+".m" )
+
+        ok, text = self.generators.test_script()
+        if not ok :
+            logger.error("Evaluation of the test script template failed: {err}".format(err=text) )
+        else :
+            self.fileWriterRoot.genFile( "runtests.m", text )
 
     def _genFile(self, ok, text, filename):
         if not ok :
