@@ -214,6 +214,11 @@ class RobotModel:
         return self.tree.nJ + 6*self.isFloatingBase
         # NOTE: this relies on the assumption that any joint is 1 DOF...
 
+    @property
+    def properDOFs(self):
+        return self.tree.nJ
+        # NOTE: this relies on the assumption that any joint is 1 DOF...
+
     def allConstantsIter(self):
         return itertools.chain(
                 self.inertia.constants,
