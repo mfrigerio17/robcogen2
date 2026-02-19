@@ -54,7 +54,7 @@ vcross = vcross_mx(«velocity»);
 
 @   else -- fixed base
 @    if parent == base then
-«acceler» = «child_X_parent»(:,6) * g; % TODO hide 6
+«acceler» = «child_X_parent»(:,«commons.linear_Z_coordinate») * g;
 «acceler»(«subspaceIdx») = «acceler»(«subspaceIdx») + «here.args.qdd»(«jid»);
 «velocity» = «spatialVelDueToJointOnly(myJoint, here.args.qd, jid)»;
 @

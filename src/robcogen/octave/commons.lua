@@ -36,6 +36,7 @@ local function commons(robot, transforms, configurator)
 
 
     return {
+        linear_Z_coordinate = 6,
         spatialVectorIndex = spatialVectorIndex,
         jointStateVectorIndex = jointStateVectorIndex,
         symbolicVariableToJoint = symbolicVariableToJoint,
