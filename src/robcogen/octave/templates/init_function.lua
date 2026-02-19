@@ -17,8 +17,10 @@ robot.updateK = @(q) robot.xm.«meta.class_transforms_container.methods.update_a
 
 @if robot.isFloatingBase then
 robot.ID = @(v_base, gravity, qd, qdd, fext) «ns_qualifier»«meta.func_inverse_dynamics.name»(robot.ip, robot.xm, v_base, gravity, qd, qdd, fext);
+robot.FD = @(v_base, gravity, qd, tau, fext) «ns_qualifier»«meta.func_forward_dynamics.name»(robot.ip, robot.xm, v_base, gravity, qd, tau, fext);
 @else
-robot.ID   = @(qd, qdd, fext) «ns_qualifier»«meta.func_inverse_dynamics.name»(robot.ip, robot.xm, qd, qdd, fext);
+robot.ID = @(qd, qdd, fext) «ns_qualifier»«meta.func_inverse_dynamics.name»(robot.ip, robot.xm, qd, qdd, fext);
+robot.FD = @(qd, tau, fext) «ns_qualifier»«meta.func_forward_dynamics.name»(robot.ip, robot.xm, qd, tau, fext);
 @end
 
 

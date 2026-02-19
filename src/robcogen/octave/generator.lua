@@ -87,6 +87,7 @@ local function getAllGenerators(robot, transforms, configurator)
         link_XM_parent = link_XM_parent,
         link_XF_parent = link_XF_parent,
         ns_qualifier =  ns_qualifier,
+        enums = RCG.enums,
     }
 
 
@@ -145,14 +146,14 @@ local function getAllGenerators(robot, transforms, configurator)
         return ok,text
     end
 
+    env.spatialVelDueToJointOnly = function(joint, qd_var_name, jid)
+        local i = commons.spatialVectorIndex(joint)
+        local ret = {"0","0","0","0","0","0"}
+        ret[i] = qd_var_name .. "(" .. tostring(jid) .. ")"
+        return "[" .. table.concat(ret, ";") .. "]"
+    end
 
     local function generator_inverse_dynamics(allMatricesMetadata)
-        env.spatialVelDueToJointOnly = function(joint, qd_var_name, jid)
-            local i = commons.spatialVectorIndex(joint)
-            local ret = {"0","0","0","0","0","0"}
-            ret[i] = qd_var_name .. "(" .. tostring(jid) .. ")"
-            return "[" .. table.concat(ret, ";") .. "]"
-        end
         env.here = txtConfig.meta.func_inverse_dynamics
         env.ids  = txtConfig.ids.dyn_vars
         env.inertia = function(link)
@@ -177,6 +178,20 @@ local function getAllGenerators(robot, transforms, configurator)
                                                   link_XM_parent(link) )
         end
         local ok,text = genutils.tpl_eval(templates.jsim, myenv)
+        return ok,text
+    end
+
+
+    local function generator_forward_dynamics()
+        env.here = txtConfig.meta.func_forward_dynamics
+        env.ids  = txtConfig.ids.dyn_vars
+        env.UTermName = function(link) return link.name..'_U' end
+        env.uTermName = function(link) return link.name..'_u' end
+        env.DTermName = function(link) return link.name..'_D' end
+        env.child_mx_parent = function(link)
+            return env.here.args.transforms..'.'..env.meta.class_transforms_container.members.individual_tf( link_XM_parent(link) )..'.mx'
+        end
+        local ok,text = genutils.tpl_eval(templates.forward_dynamics, env)
         return ok,text
     end
 
@@ -236,6 +251,7 @@ local function getAllGenerators(robot, transforms, configurator)
         transforms_container = generator_transforms_container,
         inverse_dynamics   = generator_inverse_dynamics,
         jsim               = generator_jsim,
+        forward_dynamics   = generator_forward_dynamics,
         roys_model         = generator_roys_model,
         init_function      = generator_init_function,
     }

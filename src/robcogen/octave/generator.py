@@ -85,6 +85,10 @@ class Generator:
         ok, text = self.generators.jsim()
         self._genFile(ok, text, self.txtcfg.meta.class_jsim.name+".m" )
 
+    def forward_dynamics(self):
+        ok, text = self.generators.forward_dynamics()
+        self._genFile(ok, text, self.txtcfg.meta.func_forward_dynamics.name+".m" )
+
     def RoysModel(self):
         xtree_data = roy.buildXTreeData(self.robot)
         ok, text = self.generators.roys_model(xtree_data)

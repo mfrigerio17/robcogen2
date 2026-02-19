@@ -35,6 +35,7 @@ class Generator:
         octgen.coordinateTransformFiles()
         octgen.inverseDynamics()
         octgen.jsim()
+        octgen.forward_dynamics()
         octgen.RoysModel()
         octgen.initFunction()
 

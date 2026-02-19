@@ -69,6 +69,14 @@ local config = {
                 update_ci = "update_composite_inertia",
             },
         },
+        func_forward_dynamics = {
+            name = "forwardDynamics",
+            args = {
+                ip = "ip",
+                transforms = "xm",
+                q="q", qd="qd", tau="tau", fext="fext",
+            },
+        },
         func_roys_model = {
             name = function(robot) return "RoyModel" end,
             args = {

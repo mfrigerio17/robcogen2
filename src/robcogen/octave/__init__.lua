@@ -8,6 +8,7 @@ local function load_lua_modules(path, path_ctgen)
             transforms_container = loadfile(path .. "/templates/transforms_container.lua") (),
             inverse_dynamics   = loadfile(path .. "/templates/inverse_dynamics.lua") (),
             jsim               = loadfile(path .. "/templates/jsim.lua") (),
+            forward_dynamics   = loadfile(path .. "/templates/forward_dynamics.lua") (),
             roys_model         = loadfile(path .. "/templates/roy.lua") (),
             init_function      = loadfile(path .. "/templates/init_function.lua") (),
         },
