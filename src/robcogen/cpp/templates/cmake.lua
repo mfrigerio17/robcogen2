@@ -26,6 +26,7 @@ include_directories(.) # so that local includes with < > will also work
 set(HEADERS
     ./«headers.main»
     ./«headers.types»
+    ./«headers.traits»
     ./«headers.transforms»
     ./«headers.inertia»
     ./«headers.constants»
