@@ -73,11 +73,6 @@ class Generator:
         ok, text = self.generators.playground.source()
         self._genFile(ok, text, self.configurator.files.playground + '.cpp')
 
-        fname = "data_map.h"
-        path = _path_here / "static" / fname
-        with fileutils.open_utf8_reading(path) as content:
-            self.fileWriter.genFile( fname, content.read() )
-        #path.copy( self.fileWriter.basePath / fname ) # requires python 3.14
 
     def coordinateTransforms(self, ctModelMeta):
         aux = self.generators.constants.readAccessExprForGeometricConstant

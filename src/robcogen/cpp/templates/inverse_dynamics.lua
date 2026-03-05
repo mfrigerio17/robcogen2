@@ -10,7 +10,6 @@ local header_template = [[
 #include "«headers.types»"
 #include "«headers.inertia»"
 #include "«headers.transforms»"
-#include "«headers.data_map»"
 
 ${ns.open}
 
@@ -40,7 +39,7 @@ struct «self.class»
 «typesMacro»
 @end
     using «t_jstate» = «types.jointState»«tpl.suffix»;
-    using «self.local_types.fext» = ::rcg2::DataMap<Force, linksCount, «types.linkIDs»>;
+    using «self.local_types.fext» = LinkDataMap<Force>;
 
     /**
      * Default constructor

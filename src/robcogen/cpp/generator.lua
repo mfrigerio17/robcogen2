@@ -49,7 +49,6 @@ local function allGenerators(robot, transforms, configurator)
             fwd_dyn   = header_file_name(configurator.files.h_fwd_dyn),
             inv_dyn   = header_file_name(configurator.files.h_inv_dyn),
             jsim      = header_file_name(configurator.files.h_jsim),
-            data_map  = header_file_name("data_map"),
         },
         impl_files = {
             constants = impl_file_name(configurator.files.h_constants),

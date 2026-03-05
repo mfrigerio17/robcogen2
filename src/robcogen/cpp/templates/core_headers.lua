@@ -57,6 +57,7 @@ local main = [[
 #ifndef «include_guard»
 #define «include_guard»
 
+#include <iit/rbd/data_map.h>
 #include "«headers.types»"
 
 ${ns.open}
@@ -100,6 +101,11 @@ static constexpr const «types.linkIDs» orderedLinkIDs[linksCount] = {
     «linkIDs»
 };
 
+template<typename T>
+using LinkDataMap = «ns_iit_rbd.qualifier»::DataMap<T, linksCount, «types.linkIDs»>;
+
+template<typename T>
+using JointDataMap = «ns_iit_rbd.qualifier»::DataMap<T, jointsCount, «types.jointIDs»>;
 
 ${ns.close}
 #endif
@@ -118,7 +124,6 @@ local traits = [[
 #include "«headers.fwd_dyn»"
 #include "«headers.inv_dyn»"
 #include "«headers.jsim»"
-#include "data_map.h"
 
 ${ns.open}
 
@@ -135,9 +140,9 @@ struct Traits
     static constexpr int links_count{«ns.qualifier»::linksCount};
     static constexpr bool floating_base{«robot.isFloatingBase»};
 @if templateAll then
-    using ExtForces = ::rcg2::DataMap<typename TypesGen«tpl.suffix»::ForceVector, linksCount, LinkID>;
+    using ExtForces = «ns.qualifier»::LinkDataMap<typename TypesGen«tpl.suffix»::ForceVector>;
 @else
-    using ExtForces = ::rcg2::DataMap<Force, linksCount, LinkID>;
+    using ExtForces = «ns.qualifier»::LinkDataMap<Force>;
 @end
     using Transforms =  typename «ns.qualifier»::«classes.transforms»«tpl.suffix»;
 
