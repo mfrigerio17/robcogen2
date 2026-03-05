@@ -117,7 +117,7 @@ class Generator:
         self._genFile(ok, text, self.configurator.implFileName(basename))
 
     def cmakefile(self):
-        ok, text = self.generators.cmake()
+        ok, text = self.generators.cmake.main()
         self._genFile(ok, text, 'CMakeLists.txt')
 
     def tests(self):
@@ -137,3 +137,16 @@ class Generator:
         self._genFile(ok, text, self.configurator.files.test_consistency+'.cpp')
 
         self.fileWriter = originalWriter
+
+    def tests_for_installed_files(self):
+        originalWriter = self.fileWriter
+        self.fileWriter = self.fileWriter.subDir('tests_installation')
+
+        ok, text = self.generators.tests.test_for_installed_files__consistency()
+        self._genFile(ok, text, self.configurator.files.test_consistency+'.cpp')
+
+        ok, text = self.generators.cmake.test_for_installed_files()
+        self._genFile(ok, text, 'CMakeLists.txt')
+
+        self.fileWriter = originalWriter
+

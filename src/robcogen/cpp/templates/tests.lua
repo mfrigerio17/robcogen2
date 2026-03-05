@@ -2,8 +2,8 @@ local id = [[
 #include <iit/robcogen/test/cmdline_id.h>
 #include <«headers.inertia»>
 #include <«headers.transforms»>
-#include <«headers.inv_dyn»> // TODO add the installation path
-#include <«headers.traits»>  // TODO add the installation path
+#include <«headers.inv_dyn»>
+#include <«headers.traits»>
 
 /**
  * This program calls the generated implementation of Inverse Dynamics, and
@@ -36,8 +36,8 @@ int main(int argc, char** argv)
 
 local jsim = [[
 #include <iit/robcogen/test/cmdline_jsim.h>
-#include <«headers.jsim»> // TODO add the installation path
-#include <«headers.traits»>  // TODO add the installation path
+#include <«headers.jsim»>
+#include <«headers.traits»>
 
 /**
  * This program calls the generated implementation of the algorithm to calculate
@@ -68,8 +68,8 @@ local fd = [[
 #include <iit/robcogen/test/cmdline_fd.h>
 #include <«headers.inertia»>
 #include <«headers.transforms»>
-#include <«headers.fwd_dyn»> // TODO add the installation path
-#include <«headers.traits»>  // TODO add the installation path
+#include <«headers.fwd_dyn»>
+#include <«headers.traits»>
 
 /**
  * This program calls the generated implementation of Forward Dynamics, and
@@ -102,12 +102,12 @@ int main(int argc, char** argv)
 
 local consistency = [[
 #include <iit/robcogen/test/dynamics_consistency.h>
-#include <«headers.inertia»>
-#include <«headers.transforms»>
-#include <«headers.inv_dyn»>
-#include <«headers.jsim»>
-#include <«headers.fwd_dyn»>
-#include <«headers.traits»>  // TODO add the installation path
+#include <«header_prefix»«headers.inertia»>
+#include <«header_prefix»«headers.transforms»>
+#include <«header_prefix»«headers.inv_dyn»>
+#include <«header_prefix»«headers.jsim»>
+#include <«header_prefix»«headers.fwd_dyn»>
+#include <«header_prefix»«headers.traits»>
 
 /**
  * This program calls the dynamics-consistency-test implemented in
@@ -154,11 +154,19 @@ local function generator_tests(robot, configurator, env)
     if configurator.templateAll() then
         env.tplscalar = '<double>'
     end
+
     return {
         test_id = function() return RCG.utils.templates.tpl_eval(id, env) end,
         test_jsim = function() return RCG.utils.templates.tpl_eval(jsim, env) end,
         test_fd = function() return RCG.utils.templates.tpl_eval(fd, env) end,
-        test_consistency = function() return RCG.utils.templates.tpl_eval(consistency, env) end,
+        test_consistency = function()
+            env.header_prefix = ""
+            return RCG.utils.templates.tpl_eval(consistency, env)
+        end,
+        test_for_installed_files__consistency = function()
+            env.header_prefix = configurator.txtCfg.make.incPath(robot)
+            return RCG.utils.templates.tpl_eval(consistency, env)
+        end,
     }
 end
 

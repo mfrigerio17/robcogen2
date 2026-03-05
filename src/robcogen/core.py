@@ -26,6 +26,7 @@ class Generator:
         cppgen.dynamics()
         cppgen.cmakefile()
         cppgen.tests()
+        cppgen.tests_for_installed_files()
 
     def generateOctave(self):
         octconfig = octave.config.Configurator(self.config.cmdline_args, self.robot.tree)
