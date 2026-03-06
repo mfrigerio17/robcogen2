@@ -62,26 +62,22 @@ local function i_iterator_with_separator(iter_factory, separator)
     return myiter, inv, ctrl
 end
 
--- TODO this should be called and use -i-pairs, not pairs
--- because we assume/need ordered sequences
 
-local function poly_pairs(d)
-    if type(d) == "table" then
-        return pairs(d)
-    elseif type(d) == "userdata" then -- we assume it is a python dictionary
-        -- python dictionaries after python 3.7 preserve insertion order
-        local iterator, invariant, ctrl = python.iter( d )
-        local myiterator = function()
-            local item = iterator(invariant, ctrl)
-            ctrl = item
-            if item ~= nil then
-                return item, d[item]
-            end
-        end
-        return myiterator, invariant, ctrl
-    else
-        error("Unsupported object type for 'poly_pairs'", 2)
+local function sorted_pairs(python_dictionary)
+    if type(python_dictionary) ~= "userdata" then
+        error("'sorted_pairs' expects a python dictionary", 2)
     end
+    -- Python dictionaries after python 3.7 preserve insertion order.
+    -- Thus, we just use the given python iterator
+    local iterator, invariant, ctrl = python.iter( python_dictionary )
+    local myiterator = function()
+        local item = iterator(invariant, ctrl)
+        ctrl = item
+        if item ~= nil then
+            return item, python_dictionary[item]
+        end
+    end
+    return myiterator, invariant, ctrl
 end
 
 
@@ -111,6 +107,6 @@ return {
     comma_separated_list = comma_separated_list,
     i_iterator_decorator = i_iterator_decorator,
     i_iterator_with_separator = i_iterator_with_separator,
-    poly_pairs = poly_pairs,
+    sorted_pairs = sorted_pairs,
     poly_ipairs = poly_ipairs,
 }

@@ -26,8 +26,9 @@ methods
 @   local valueof = function(x) return valueof(x, 'obj.'..here.members.constants) end
 
     function updateParameters(obj, «here.farguments.model_parameters»)
-@  for link, flags in pairs(robot.inertia.parametric_flags) do
-@    local ip = inertial_data.byLink(link)
+@  for _, link in sorted_links(robot.isFloatingBase) do
+@    local ip    = robot.inertia.actual_data.byLink(link)
+@    local flags = robot.inertia.parametric_flags[link]
 @    if flags.allParametric() then
         % the inertial properties of «link.name» are all parametric... recreate the tensor
         obj.«here.members.linkip(link)» = «ns_qualifier»RigidBodyInertia(...

@@ -143,8 +143,9 @@ local source = [[
 void «qualifier»::«NAMES.members.paramsUpdate»(const «meta.inertia_parameters.class»«tpl_help.suffix»& fresh)
 {
     «NAMES.members.parameters» = fresh;  // trivial bit-copy is fine
-@for link, flags in pairs(robot.inertia.parametric_flags) do
-@   local ip = inertial_data.byLink(link)
+@for _, link in sorted_links(robot.isFloatingBase) do
+@   local ip    = robot.inertia.actual_data.byLink(link)
+@   local flags = robot.inertia.parametric_flags[link]
 @   if flags.allParametric() then
     com_«link.name» = «types.vec3»(«field_value(ip.com.x, link, ipfield.comx)», «field_value(ip.com.y, link, ipfield.comy)», «field_value(ip.com.z, link, ipfield.comz)»);
     tensor_«link.name».fill(
