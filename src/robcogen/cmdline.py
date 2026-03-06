@@ -32,11 +32,19 @@ def cfgLogging(level):
 
 def main():
 
+    class VersionOptionAction(argparse.Action):
+        def __init__(self, option_strings, dest, **kwargs):
+            return super().__init__(option_strings, dest, nargs=0, default=argparse.SUPPRESS, **kwargs)
+        def __call__(self, parser, namespace, values, option_string, **kwargs):
+            print("RobCoGen2 version " + robcogen.__version__)
+            parser.exit() # terminates the program too
+
     argparser = argparse.ArgumentParser(prog='rcg', description='The Robotics Code Generator')
-    argparser.add_argument('-v', '--verbose', dest='verbose', action='store_true', help='lower the logging level to DEBUG (default is WARN)')
+    argparser.add_argument('-v', '--version', action=VersionOptionAction, help='print version information')
+    argparser.add_argument('-d', '--verbose', dest='verbose', action='store_true', help='lower the logging level to DEBUG (default is WARN)')
     argparser.add_argument('-o', '--output', dest='output', metavar='DIR', help='base output path (defaults to {defa})'.format(defa=robcogen.config.default_config["outdir"]))
 
-    argparser.add_argument('-fb', '--floating-base', dest='floating', action='store_true', help='Consider the robot as having a floating underactuated base')
+    argparser.add_argument('-b', '--floating-base', dest='floating', action='store_true', help='consider the robot as having a floating underactuated base')
 
     argparser.add_argument('--cpp',    dest='cpp',   action='store_true', help='generate C++ code')
     argparser.add_argument('--octave', dest='octave',action='store_true', help='generate octave code')
