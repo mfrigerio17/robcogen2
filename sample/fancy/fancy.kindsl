@@ -22,7 +22,7 @@ RobotBase base0 {
 link link1 {
     id = 1
     inertia_properties {
-        mass = m1[1]
+        mass = m1[1]    // an example of an inertia parameter, with default value
         CoM = (0.5, .0, .0)
         Ix=0.0025  Iy=0.33458  Iz=0.33458  Ixy=0.0  Ixz=0.0  Iyz=0.0
     }
@@ -93,7 +93,7 @@ r_joint jA {
 
 p_joint jB {
     ref_frame {
-        translation= (ll[1.0], 0.0, 0.0)
+        translation= (ll[1.0], 0.0, 0.0)  // an example of a geometric parameter, with default value
         rotation   = (-PI/2.0, 0.0, 0.0)
     }
 }
