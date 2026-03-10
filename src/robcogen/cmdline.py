@@ -61,7 +61,10 @@ def main():
 
     cfgLogging(logging.DEBUG if args.verbose else logging.WARNING)
 
-    connectivity, tree, frames, geometry, inertia, params = rmtool.getmodels(args.robot, args.params)[0:6]
+    loadopts = {
+        'dropFixedJoints' : True # for URDF only
+    }
+    connectivity, tree, frames, geometry, inertia, params = rmtool.getmodels(args.robot, args.params, **loadopts)[0:6]
     configurator = robcogen.config.Configurator(args)
     core = robcogen.core.Generator(configurator, geometry, inertia, None)
 
