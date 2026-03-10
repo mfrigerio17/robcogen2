@@ -37,9 +37,8 @@ class TransformsModelWrapper:
                 cttoken = CoordinateTransformPlaceholder(leftFrame=leftFrame, rightFrame=rightFrame)
                 desTransforms.append( cttoken )
                 links.append( l )
-        # TODO append any additional user-desired transform
 
-        ctModel = ct.frommotions.motionsToCoordinateTransforms(posesSpecsModel, desTransforms, robot.name)#TODO name
+        ctModel = ct.frommotions.motionsToCoordinateTransforms(posesSpecsModel, desTransforms, robot.name+'-geometry')
         ctModelMeta = ct.metadata.TransformsModelMetadata(ctModel)
 
         allMxMeta = {}
