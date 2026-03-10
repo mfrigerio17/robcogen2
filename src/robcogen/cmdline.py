@@ -1,5 +1,6 @@
 import logging, argparse
 
+import rmt
 import rmt.rmt as rmtool
 import kgprim.ct
 import ctgen
@@ -20,6 +21,7 @@ def cfgLogging(level):
 
     loggers = [logger,
         logging.getLogger(kgprim.ct.__package__),
+        logging.getLogger(rmtool.__name__),
         logging.getLogger(robmodel.__package__),
         logging.getLogger(ctgen.__package__),
         logging.getLogger(ctgen_backends.octave.__package__),
