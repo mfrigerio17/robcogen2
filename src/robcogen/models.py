@@ -1,5 +1,5 @@
-from enum import Enum, auto
-import itertools
+from enum import Enum
+import itertools, functools, operator
 import numbers
 from dataclasses import dataclass
 
@@ -78,6 +78,8 @@ class TransformsModelWrapper:
 
 
 class IPField(Enum):
+    # Do not use an IntEnum despite it would be appropriate, because the members,
+    # in Lua, will be pure numbers (loosing attributes like 'name')
     '''
     Enumeration of all the scalar values of a rigid body inertia
     '''
@@ -92,16 +94,41 @@ class IPField(Enum):
     ixz  = 256
     iyz  = 512
 
+    @property
+    def _i(self) : return min(2, self.value%16)
+    # this is 1 for mass, 2 for any CoM field, 0 for any moments field
+
+    def _attr(self, bi) :
+        return (bi.moments, bi, bi.com)[self._i]
+
+    @property
+    def _field(self) :
+        return (self.name, self.name, self.name.replace("com",""))[self._i]
+
+    def get(self, body_inertia):
+        return getattr( self._attr(body_inertia), self._field )
+
+    def set(self, body_inertia, value):
+        return setattr( self._attr(body_inertia), self._field, value )
+
+
 @dataclass(eq=True, frozen=True)
 class InertiaPropertyBacktrackingData:
     link    : kgprim.core.RigidBody
     ipfield : IPField
+
+    @property
+    def id(self):
+        return self.link.name + '_' + self.ipfield.name
 
 @dataclass(eq=True, frozen=True)
 class KinematicPropertyBacktrackingData:
     pose  : kgprim.core.Pose
     mstep : kgprim.motions.MotionStep
 
+    @property
+    def id(self):
+        return self.pose.target.name + '_' + ('r','t')[self.mstep.kind.value] + self.mstep.axis.name.lower()
 
 class ExpressionsOfAQuantity:
     '''
@@ -221,23 +248,40 @@ class RobotModel:
     def allConstantsIter(self):
         return itertools.chain(
                 self.inertia.constants,
-                self.kinematics.constants.keys() )
+                self.kinematics.constants )
 
 
 
+def _register_numerical_property(
+    container, propertY, backtrackingData, setter, notifyParam, notifyConst, ndigitsRound=5 ):
 
-ipgetter = {
-    IPField.mass : (lambda bodyInertia : bodyInertia.mass),
-    IPField.comx : (lambda bodyInertia : bodyInertia.com.x),
-    IPField.comy : (lambda bodyInertia : bodyInertia.com.y),
-    IPField.comz : (lambda bodyInertia : bodyInertia.com.z),
-    IPField.ixx  : (lambda bodyInertia : bodyInertia.moments.ixx),
-    IPField.iyy  : (lambda bodyInertia : bodyInertia.moments.iyy),
-    IPField.izz  : (lambda bodyInertia : bodyInertia.moments.izz),
-    IPField.ixy  : (lambda bodyInertia : bodyInertia.moments.ixy),
-    IPField.ixz  : (lambda bodyInertia : bodyInertia.moments.ixz),
-    IPField.iyz  : (lambda bodyInertia : bodyInertia.moments.iyz)
-}
+    if isinstance(propertY, expr.Expression) :
+        quantity = propertY.arg
+        if isinstance(quantity, expr.Parameter) :
+            exprs = container.parameters_.setdefault(quantity, ExpressionsOfAQuantity(quantity))
+            exprs.addExpression(propertY, backtrackingData)
+            notifyParam()
+
+        elif isinstance(quantity, expr.Constant) :
+            exprs = container.constants_.setdefault(quantity, ExpressionsOfAQuantity(quantity))
+            exprs.addExpression(propertY, backtrackingData)
+            notifyConst()
+        #else:
+        # it is either a Variable or PI
+    else:
+    # we unconditionally replace floating point attributes with
+    # named constants with the same value (only when non-zero)
+        assert( isinstance(propertY, numbers.Number) )
+        if round(propertY, ndigitsRound) == 0.0 :
+            setter(0.0)
+        else:
+            cc  = expr.Constant(name=backtrackingData.id, value=propertY)
+            idy = expr.Expression(cc)
+            setter(idy)
+            exprs = container.constants_.setdefault(cc, ExpressionsOfAQuantity(cc))
+            exprs.addExpression(idy, backtrackingData)
+            notifyConst()
+
 
 class RobotInertia:
     '''
@@ -245,19 +289,23 @@ class RobotInertia:
     additional metadata required by RobCoGen internals.
     '''
 
-    def __init__(self, robot, inertia):
+    def __init__(self, robot, inertia, ndigitsRound=5):
         self.parameters_ = {}
         self.constants_  = {}
         self.pflags = {}
         self.cflags = {}
         # since python3.7 dictionaries preserve insertion order
         self.inputModel = inertia
+        self.ndigitsRound = ndigitsRound
 
-        self._isParametric = False
         for link in robot.tree.links.values():
             self.cflags[link] = set()
             self.pflags[link] = RobotInertia.ParametricFlags()
             self._registerProperties(link, inertia.byLink(link))
+
+        self._isParametric = (
+            functools.reduce( lambda x,y: x|y.flags, self.pflags.values(), 0)
+                > 0)
 
     @property
     def isParametric(self):
@@ -272,25 +320,17 @@ class RobotInertia:
     def _registerProperties(self, link, ip):
         if ip is None:
             return
+
         for __, field in IPField.__members__.items():
-            prop = ipgetter[field](ip)
+            propertY  = field.get(ip)
+            backtrack = InertiaPropertyBacktrackingData(link, field)
+            setter    = lambda v : field.set(ip, v)
+            notifyPar = lambda : self.pflags[link].add(field)
+            notifyCnst= lambda : self.cflags[link].add(field)
 
-            if isinstance(prop, expr.Expression) :
-                backtrack = InertiaPropertyBacktrackingData(link, field)
-                quantity = prop.arg
+            _register_numerical_property(self, propertY, backtrack, setter,
+                    notifyPar, notifyCnst, self.ndigitsRound)
 
-                if isinstance(quantity, expr.Parameter) :
-                    exprs = self.parameters_.setdefault(quantity, ExpressionsOfAQuantity(quantity))
-                    exprs.addExpression(prop, backtrack)
-                    self.pflags[link].add( field )
-                    self._isParametric = True
-
-                elif isinstance(quantity, expr.Constant) :
-                    exprs = self.constants_.setdefault(quantity, ExpressionsOfAQuantity(quantity))
-                    exprs.addExpression(prop, backtrack)
-                    self.cflags[link].add( field )
-            else:
-                assert( isinstance(prop, numbers.Number) )
 
     @property
     def constants(self):
@@ -316,8 +356,8 @@ class RobotInertia:
         im  = IPField.ixx.value + IPField.iyy.value + IPField.izz.value +\
               IPField.ixy.value + IPField.ixz.value + IPField.iyz.value
 
-        def __init__(self):
-            self.flags = 0
+        def __init__(self, v=0):
+            self.flags = v
 
         def add(self, field):
             self.flags = self.flags + field.value
@@ -338,7 +378,7 @@ class RobotInertia:
 from kgprim.motions import MotionStep
 
 class RobotKinematics:
-    def __init__(self, in_geometry):
+    def __init__(self, in_geometry, ndigitsRound=5):
         jointPoses = robmodel.jposes.JointPoses(
             in_geometry.connectivityModel,
             in_geometry.framesModel,
@@ -351,19 +391,24 @@ class RobotKinematics:
         self.symVarToJoint = jointPoses.symVarToJoint
         self.baseFrame = in_geometry.framesModel.linkFrames[ in_geometry.connectivityModel.base ]
 
-        self.constants   = {}
+        self.ndigitsRound = ndigitsRound
+        self.constants_  = {}
         self.parameters_ = {}
-        self.registerArguments()
+        self._registerArguments()
 
     @property
     def parameters(self):
         return self.parameters_.keys()
 
+    @property
+    def constants(self):
+        return self.constants_.keys()
+
     def isParameter(self, candidate):
         return candidate in self.parameters
 
     def isConstant(self, candidate):
-        return candidate in self.constants
+        return candidate in self.constants_
 
     def allPosesSpecs(self):
         return self.poseSpecByPose.values()
@@ -377,24 +422,15 @@ class RobotKinematics:
     def getSuccessorWrtJointPose(self, joint):
         return self.jointPosesByJoint[joint]
 
-    def registerArguments(self):
+    def _registerArguments(self):
         for poseSpec in self.poseSpecByPose.values() :
             motionPath = poseSpec.motion
             for motionSequence in motionPath.sequences :
                 for motionStep in motionSequence.steps :
-                    amount = motionStep.amount
-                    if isinstance(amount, expr.Expression) :
-                        backtrack = KinematicPropertyBacktrackingData(poseSpec.pose, motionStep)
-                        quantity = amount.arg
-
-                        if isinstance(quantity, expr.Parameter) :
-                            if quantity not in self.parameters_ :
-                                self.parameters_[quantity] = ExpressionsOfAQuantity(quantity)
-                            self.parameters_[quantity].addExpression( amount, backtrack )
-
-                        elif isinstance(quantity, expr.Constant) :
-                            if quantity not in self.constants :
-                                self.constants[quantity] = ExpressionsOfAQuantity(quantity)
-                            self.constants[quantity].addExpression( amount, backtrack )
+                    propertY  = motionStep.amount
+                    backtrack = KinematicPropertyBacktrackingData(poseSpec.pose, motionStep)
+                    setter    = lambda v : setattr(motionStep, 'amount', v)
+                    _register_numerical_property(self, propertY, backtrack,
+                            setter, lambda:None, lambda:None, self.ndigitsRound)
 
 
