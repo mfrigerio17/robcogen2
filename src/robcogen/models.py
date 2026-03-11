@@ -6,6 +6,8 @@ from dataclasses import dataclass
 import robmodel.connectivity
 import robmodel.treeutils
 import robmodel.jposes
+import robmodel.inertia
+from robmodel.convert.kindsl.exp import inertiaProperties as inertiaPropsInBodyCoords
 
 import kgprim.core
 import kgprim.values as expr
@@ -287,19 +289,32 @@ class RobotInertia:
     additional metadata required by RobCoGen internals.
     '''
 
-    def __init__(self, robot, inertia, ndigitsRound=5):
+    def __init__(self, robot, inertia_in, ndigitsRound=5):
         self.parameters_ = {}
         self.constants_  = {}
         self.pflags = {}
         self.cflags = {}
         # since python3.7 dictionaries preserve insertion order
-        self.inputModel = inertia
+
         self.ndigitsRound = ndigitsRound
+
+        # Make sure the inertial properties are in body coordinates
+        inertia_body_coords = {}
+        for name, link in robot.movingLinks.items():
+            m,cx,cy,cz,ixx,iyy,izz,ixy,ixz,iyz = inertiaPropsInBodyCoords(robot.geometry, inertia_in, link)
+
+            frame   = robot.frames.byLink[link]
+            com     = robmodel.inertia.CoM(frame, x=cx,y=cy,z=cz)
+            moments = robmodel.inertia.IMoments(frame, ixx=ixx, iyy=iyy, izz=izz, ixy=ixy, ixz=ixz, iyz=iyz)
+            inertia_body_coords[name] = robmodel.inertia.BodyInertia(mass=m, com=com, moments=moments)
+
+        self.inertia_model = robmodel.inertia.RobotLinksInertia(
+            inertia_in.robot, inertia_in.frames, inertia_body_coords)
 
         for link in robot.tree.links.values():
             self.cflags[link] = set()
             self.pflags[link] = RobotInertia.ParametricFlags()
-            self._registerProperties(link, inertia.byLink(link))
+            self._registerProperties(link, self.inertia_model.byLink(link))
 
         self._isParametric = (
             functools.reduce( lambda x,y: x|y.flags, self.pflags.values(), 0)
@@ -347,7 +362,10 @@ class RobotInertia:
 
     @property
     def actual_data(self):
-        return self.inputModel
+        '''
+        The `robmodel.inertia.RobotLinksInertia` model wrapped by this instance
+        '''
+        return self.inertia_model
 
     class ParametricFlags:
         com = IPField.comx.value + IPField.comy.value + IPField.comz.value
