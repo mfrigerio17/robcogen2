@@ -195,25 +195,23 @@ class RobotModel:
         self.fb = floatingBase
         self.frames    = geometryModel.framesModel
         self.tree      = geometryModel.connectivityModel
+        self.geometry  = geometryModel
         self.treeutils = robmodel.treeutils.TreeUtils(self.tree)
-        self.kinematics= RobotKinematics(geometryModel)
-        self.inertia   = RobotInertia(self, inertia)
-        #TODO save the link-frame inertia properties
-
-        movingLinks = self.tree.links # the default, by-name dictionary of links
-        if not floatingBase:
-            movingLinks = self.tree.links.copy() # shallow copy
-            movingLinks.pop(self.tree.base.name)
-        self.movLinks = movingLinks
 
         noBase = self.tree.links.copy() # shallow copy
         noBase.pop(self.tree.base.name)
+
+        self.movLinks    = self.tree.links if floatingBase else noBase
         self.linksNoBase = noBase
 
         self.hasPrismaticJoint = any([j.kind==robmodel.connectivity.JointKind.prismatic
                                             for j in self.tree.joints.values()])
         self.hasRevoluteJoint  = any([j.kind==robmodel.connectivity.JointKind.revolute
                                             for j in self.tree.joints.values()])
+
+        # The composite models specific of RobCoGen
+        self.kinematics = RobotKinematics(geometryModel)
+        self.inertia    = RobotInertia(self, inertia)
 
     @property
     def name(self):
