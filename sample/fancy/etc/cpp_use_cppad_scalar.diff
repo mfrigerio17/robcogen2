@@ -1,0 +1,21 @@
+This is a patch that can be applied to Fancy's generated code to use CppAD's
+double type rather than the regular double.
+
+diff --git a/sample/fancy/gen/cpp/rbd_types.h b/sample/fancy/gen/cpp/rbd_types.h
+index 72bb831..e1f2891 100644
+--- a/sample/fancy/gen/cpp/rbd_types.h
++++ b/sample/fancy/gen/cpp/rbd_types.h
+@@ -4,11 +4,12 @@
+ #include <iit/rbd/rbd.h>
+ #include <iit/rbd/scalar_traits.h>
+ #include <iit/rbd/InertiaMatrix.h>
++#include <iit/robcogen/scalar/cppad.h>
+ 
+ namespace fancy {
+ namespace rcg2 {
+ 
+-typedef typename iit::rbd::DoubleTraits ScalarTraits;
++typedef typename iit::robcogen::CppADDoubleTraits ScalarTraits;
+ typedef typename ScalarTraits::Scalar Scalar;
+ 
+ typedef iit::rbd::Core<Scalar> TypesGen;
