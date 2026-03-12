@@ -9,6 +9,7 @@ import ctgen_backends.cpp_iitrbd
 
 import robcogen.core
 import robcogen.config
+import robcogen.playground
 import robcogen.cpp.config
 import robmodel
 
@@ -51,6 +52,7 @@ def main():
     argparser.add_argument('--cpp',    dest='cpp',   action='store_true', help='generate C++ code')
     argparser.add_argument('--octave', dest='octave',action='store_true', help='generate octave code')
     argparser.add_argument('--tests',  dest='tests', action='store_true', help='generate helper test scripts')
+    argparser.add_argument('--secret', dest='playground',action='store_true')
 
     rmtool.setRobotArgs(argparser)
 
@@ -74,4 +76,6 @@ def main():
         core.generateOctave()
     if args.tests:
         core.generateTestScripts()
+    if args.playground:
+        robcogen.playground.playground(core)
 
