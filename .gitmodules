@@ -1,0 +1,3 @@
+[submodule "etc/iit_rbd"]
+	path = etc/iit_rbd
+	url = https://github.com/mfrigerio17/iit_rbd.git
