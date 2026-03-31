@@ -1,9 +1,8 @@
 This is RobCoGen2, a code generator for fast robot dynamics.
 
-This project is a complete rewrite of the original [RobCoGen][rcg-web]
-tool.
+For exhaustive documentation, please see the [website][rcg2-web].
 
-For exhaustive documentation, please see the new website. TODO: add link
+This project is a complete rewrite of the legacy [tool][rcg-web].
 
 # Examples
 The `sample` directory contains some examples, robot models and the
@@ -21,3 +20,4 @@ details.
 
 
 [rcg-web]: http://robcogenteam.bitbucket.io/
+[rcg2-web]: https://mfrigerio17.github.io/robcogen2-web/
