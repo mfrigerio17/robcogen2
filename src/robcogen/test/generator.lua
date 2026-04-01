@@ -26,7 +26,7 @@ abspath_spatial_v2=$(cd $2 && pwd -P)
 abspath_gen_cpp=$(cd $3 && pwd -P)
 abspath_gen_octave=$(cd $4 && pwd -P)
 
-origin=$(cd -- "$(dirname -- "$0")" &> /dev/null && pwd)
+origin=$(cd -- "$(dirname -- "$0")" > /dev/null 2>&1 && pwd -P)
 dest=`mktemp --directory`
 
 cd $dest && cmake "$abspath_gen_cpp" && make -j3
