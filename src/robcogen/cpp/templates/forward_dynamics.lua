@@ -124,7 +124,11 @@ public:
 
 @for name,link in sorted_links() do
     // Link '«name»' :
+@    if robot.treeutils.isLeaf(link) then
+    const InertiaMatrix& «vars.IA(link)»;
+@    else
     Matrix66      «vars.IA(link)»;
+@    end
     Velocity      «vars.vel(link)»;
     Acceleration  «vars.acc(link)»;
     Velocity      «vars.biasA(link)»;
@@ -171,7 +175,10 @@ const typename «qualifier»::«self.local_types.fext»
 
 «tpl.heading»
 «qualifier»::«self.class»(const «meta.inertia_properties.class»«tpl.suffix»& inertia, «meta.transforms_container.class»«tpl.suffix»& transforms) :
-   «self.members.ip»(inertia), «self.members.xt»(transforms)
+   «self.members.ip»(inertia), «self.members.xt»(transforms),
+@for _, link, comma in utils.i_iterator_with_separator(function() return ipairs(leafs) end, ",") do
+    «vars.IA(link)»(ip.«meta.inertia_properties.members.tensorGetter(link)»())«comma»
+@end
 {
 @ for  _,link in sorted_links() do
     «vars.vel(link)».setZero();
@@ -194,7 +201,9 @@ void «qualifier»::«self.class»::fd(
     using namespace «ns_iit_rbd.qualifier»;
 
 @for  _,link in sorted_links(robot.isFloatingBase) do
+@   if not robot.treeutils.isLeaf(link) then
     «vars.IA(link)» = «self.members.ip».«meta.inertia_properties.members.tensorGetter(link)»();
+@   end
     «vars.biasF(link)» = - «self.params.fext»[«common.linkIdentifier(link)»];
 @end
 
