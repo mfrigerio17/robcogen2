@@ -72,6 +72,13 @@ local function allGenerators(robot, transforms, configurator)
         RCG = RCG,
     }
 
+    env.leafs = {}
+    for _, link in env.sorted_links() do
+        if robot.treeutils.isLeaf(link) then
+            table.insert(env.leafs, link)
+        end
+    end
+
     local generators_constants = RCG.cpp.generators.constants(robot, configurator, env)
     local ret = {
         common    = env.common, -- to let the caller inject something, possibly

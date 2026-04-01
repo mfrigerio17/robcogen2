@@ -428,14 +428,6 @@ local function generators_jsim(robot, configurator, given_env)
     local env = {}
     for k,v in pairs(given_env) do  env[k] = v  end
 
-    local leafs = {}
-    for _, link in env.sorted_links() do
-        if robot.treeutils.isLeaf(link) then
-            table.insert(leafs, link)
-        end
-    end
-
-    env.leafs= leafs
     env.self = configurator.txtCfg.meta.jsim
     env.tpl  = env.common.scalarTpl( env.self.class )
     env.t_jstate = env.types.classScopeAliases.jointState
