@@ -178,7 +178,11 @@ void «qualifier»::«self.class»::«self.members.jsim_inverse»(const «types.
 @          local parent_XF_link = common.parent_XF_link(ancestor, self.members.xt)
     //    ... on joint «jid2»
     aux = - pIn(«idx») / «D(ancestor)»;
+@   if ancestor==first_link and (not robot.isFloatingBase) then
     Hi(«jid2»,«jid») = Hi(«jid»,«jid2») = aux;
+@   else
+    Hi(«jid2»,«jid») = aux;
+@   end
 @          parent = tree.parent(ancestor)
 @          if (parent~=robot.base) or robot.isFloatingBase then
     pIn = «parent_XF_link» * ( pIn + «vars.IA(ancestor)».«mxops.col»(«idx») * aux );
