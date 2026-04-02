@@ -116,6 +116,12 @@ class Generator:
         ok, text = self.generators.jsim.source()
         self._genFile(ok, text, self.configurator.implFileName(basename))
 
+        basename = self.configurator.files.h_aba_hinv
+        ok, text = self.generators.aba_hinv.header()
+        self._genFile(ok, text, self.configurator.headerFileName(basename))
+        ok, text = self.generators.aba_hinv.source()
+        self._genFile(ok, text, self.configurator.implFileName(basename))
+
     def cmakefile(self):
         ok, text = self.generators.cmake.main()
         self._genFile(ok, text, 'CMakeLists.txt')

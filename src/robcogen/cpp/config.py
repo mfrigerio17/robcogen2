@@ -69,6 +69,7 @@ class Configurator:
             h_fwd_dyn = 'forward_dynamics',
             h_inv_dyn = 'inverse_dynamics',
             h_jsim = 'jsim',
+            h_aba_hinv = 'aba_hinv',
             playground = 'playground',
             test_cmdline_id = 'test_id',
             test_cmdline_jsim = 'test_jsim',

@@ -7,6 +7,7 @@ local function load_lua_modules(path)
             inverse_dynamics   = loadfile(path .. "/templates/inverse_dynamics.lua") (),
             jsim               = loadfile(path .. "/templates/jsim.lua") (),
             forward_dynamics   = loadfile(path .. "/templates/forward_dynamics.lua") (),
+            aba_hinv           = loadfile(path .. "/templates/aba_hinv.lua") (),
             tests              = loadfile(path .. "/templates/tests.lua") (),
             cmake              = loadfile(path .. "/templates/cmake.lua") (),
             playground         = loadfile(path .. "/templates/playground.lua") (),

@@ -30,6 +30,7 @@ set(HEADERS
     ./«headers.inv_dyn»
     ./«headers.jsim»
     ./«headers.fwd_dyn»
+    ./«headers.aba_hinv»
 @if templateAll then
     ./«impl_files.constants»
     ./«impl_files.transforms»
@@ -37,6 +38,7 @@ set(HEADERS
     ./«impl_files.inv_dyn»
     ./«impl_files.jsim»
     ./«impl_files.fwd_dyn»
+    ./«impl_files.aba_hinv»
 )
 @else
 )
@@ -48,6 +50,7 @@ set(SOURCES
     ./«impl_files.inv_dyn»
     ./«impl_files.jsim»
     ./«impl_files.fwd_dyn»
+    ./«impl_files.aba_hinv»
 )
 
 # Add library

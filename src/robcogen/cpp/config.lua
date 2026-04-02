@@ -157,5 +157,17 @@ config.meta.forward_dynamics = {
 }
 
 
+config.meta.aba_hinv = {
+    class = 'ABA_Hinv',
+    members = {
+        ip = 'ip',
+        xt = 'xt',
+        jsim_inverse = 'jsim_inverse'
+    },
+    params = {
+        q= "q",
+    },
+}
+
 return config
 

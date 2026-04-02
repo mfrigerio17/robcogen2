@@ -49,6 +49,7 @@ local function allGenerators(robot, transforms, configurator)
             fwd_dyn   = header_file_name(configurator.files.h_fwd_dyn),
             inv_dyn   = header_file_name(configurator.files.h_inv_dyn),
             jsim      = header_file_name(configurator.files.h_jsim),
+            aba_hinv  = header_file_name(configurator.files.h_aba_hinv),
         },
         impl_files = {
             constants = impl_file_name(configurator.files.h_constants),
@@ -57,6 +58,7 @@ local function allGenerators(robot, transforms, configurator)
             inv_dyn   = impl_file_name(configurator.files.h_inv_dyn),
             fwd_dyn   = impl_file_name(configurator.files.h_fwd_dyn),
             jsim      = impl_file_name(configurator.files.h_jsim),
+            aba_hinv  = impl_file_name(configurator.files.h_aba_hinv),
             playground= configurator.files.playground .. '.cpp',
             test_cmdline_id = configurator.files.test_cmdline_id .. '.cpp',
             test_cmdline_jsim = configurator.files.test_cmdline_jsim .. '.cpp',
@@ -88,6 +90,7 @@ local function allGenerators(robot, transforms, configurator)
         id        = RCG.cpp.generators.inverse_dynamics(robot, configurator, env),
         jsim      = RCG.cpp.generators.jsim(robot, configurator, env),
         fd        = RCG.cpp.generators.forward_dynamics(robot, configurator, env),
+        aba_hinv  = RCG.cpp.generators.aba_hinv(robot, configurator, env),
         cmake     = RCG.cpp.generators.cmake(robot, configurator, env),
         tests     = RCG.cpp.generators.tests(robot, configurator, env),
         playground= RCG.cpp.generators.playground(robot, configurator, env),
