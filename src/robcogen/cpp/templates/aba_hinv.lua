@@ -72,6 +72,11 @@ public:
     Force    «vars.T(l)»;
 @end
 
+@ if robot.isFloatingBase then
+    // The robot base
+    Matrix66 «vars.IA(robot.base)»;
+@end
+
 @for _,link in sorted_links() do
     const «types.scalar»& «D(link)»;
 @end
@@ -120,7 +125,7 @@ void «qualifier»::«self.class»::«self.members.jsim_inverse»(const «types.
 @end
 {
     using namespace «ns_iit_rbd.qualifier»;
-@for i,l in sorted_links() do
+@for i,l in sorted_links(robot.isFloatingBase) do
 @   if not tree.isLeaf(l) then
     «vars.IA(l)» = «self.members.ip».«meta.inertia_properties.members.tensorGetter(l)»();
 @   end
@@ -237,9 +242,7 @@ void «qualifier»::«self.class»::«self.members.jsim_inverse»(const «types.
     Hi(«jid»,«jid») = 1/«D(link)» + «vars.T(link)».«mxops.T»() * («link_XM_parent» * «varname_abounce(jid)»);
 @   end
 @   local link_j
-@   local nB = robot.tree.nB
-@   if not robot.isFloatingBase then nB = nB-1 end
-@   for j = robot.tree.linkNum(link)+1, nB, 1 do
+@   for j = robot.tree.linkNum(link)+1, robot.tree.nB-1, 1 do
 @       link_j = robot.tree.codeToLink[j]
 @       joint  = tree.supportingJoint(link_j)
 @       jid2   = common.jointIdentifier(joint)
