@@ -245,6 +245,10 @@ class RobotModel:
         return self.tree.nJ
         # NOTE: this relies on the assumption that any joint is 1 DOF...
 
+    def hasSiblings(self, link):
+        iterator = self.treeutils.children(self.treeutils.parent(link))
+        return ( sum(1 for dummy in iterator) > 1 )
+
     def allConstantsIter(self):
         return itertools.chain(
                 self.inertia.constants,
