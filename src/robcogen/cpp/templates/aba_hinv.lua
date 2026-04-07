@@ -166,44 +166,46 @@ void «qualifier»::«self.class»::«self.members.jsim_inverse»(const «types.
     Force pIn;
     «types.scalar» aux;
 @for _,link in sorted_links_reversed() do
-@   lid     = common.linkIdentifier(link)
-@   ancestor= robot.treeutils.parent(link)
-@   joint   = robot.treeutils.supportingJoint(link)
-@   jid     = common.jointIdentifier(joint)
+@   local lid     = common.linkIdentifier(link)
+@   local ancestor= robot.treeutils.parent(link)
+@   local joint   = robot.treeutils.supportingJoint(link)
+@   local jid     = common.jointIdentifier(joint)
 @   if (ancestor~=robot.base) or robot.isFloatingBase then
     //
     // Joint «jid» ...
     //
     pIn = «common.parent_XF_link(link, self.members.xt)» * «vars.T(link)»;
-@      local lastlink = link
-@      while (ancestor ~= robot.base) do
-@          local joint2 = tree.supportingJoint(ancestor)
-@          local jid2   = common.jointIdentifier(joint2)
-@          local idx    = common.spatialVectorIndex(joint2)
-@          local parent_XF_link = common.parent_XF_link(ancestor, self.members.xt)
+@       local lastlink = link
+@       while (ancestor ~= robot.base) do
+@           local joint2 = tree.supportingJoint(ancestor)
+@           local jid2   = common.jointIdentifier(joint2)
+@           local idx    = common.spatialVectorIndex(joint2)
+@           local parent_XF_link = common.parent_XF_link(ancestor, self.members.xt)
     //    ... on joint «jid2»
     aux = - pIn(«idx») / «D(ancestor)»;
-@   if ancestor==first_link and (not robot.isFloatingBase) then
+@           if ancestor==first_link and (not robot.isFloatingBase) then
     Hi(«jid2»,«jid») = Hi(«jid»,«jid2») = aux;
-@   else
+@           else
     Hi(«jid2»,«jid») = aux;
-@   end
-@          parent = tree.parent(ancestor)
-@          if (parent~=robot.base) or robot.isFloatingBase then
-    pIn = «parent_XF_link» * ( pIn + «vars.IA(ancestor)».«mxops.col»(«idx») * aux );
-@          end
-@          lastlink = ancestor
-@          ancestor = parent  -- goes up the kinematic chain
-@      end
-@      if robot.isFloatingBase then
-@          local base_XF_link = common.parent_XF_link(lastlink, self.members.xt)
-@          local ab_var = varname_abounce(jid)
-    Acceleration «ab_var» = phi0 * pIn;  // a_|«robot.base.name»  ↶ «jid»|
+@           end
+@           lastlink = ancestor
+@           ancestor = tree.parent(ancestor) -- goes up the kinematic chain
+@           if (ancestor~=robot.base) or robot.isFloatingBase then
+    pIn = «parent_XF_link» * ( pIn + «vars.IA(lastlink)».«mxops.col»(«idx») * aux );
+@           end
+@       end
+@       local ab_var = abounce_vars[first_link.name][joint.name]
+@       if robot.isFloatingBase then
+@           local base_XF_link = common.parent_XF_link(lastlink, self.members.xt)
+    //    ... on the robot base
+    Acceleration «ab_var» = phi0 * pIn;  // a_{«robot.base.name» ↶ «jid»}
     Finv.«mxops.col»(«jid») = - «ab_var»;
-@      else
-    «types.scalar» «varname_abounce_top(jid)» = -aux; // a_|«first_link.name»  ↶ «jid»| (a scalar, first link is special case)
-@      end
+@       else
+    //    ... on «first_link.name»; a_{«first_link.name» ↶ «jid»} is sparse, we store just a scalar
+    «types.scalar» «ab_var» = -aux;
+@       end
 @   end
+
 @end
 
 @if not robot.isFloatingBase then
@@ -221,52 +223,46 @@ void «qualifier»::«self.class»::«self.members.jsim_inverse»(const «types.
 @   j0_idx = common.spatialVectorIndex( tree.supportingJoint(first_link) )
 @end
 @for _,link in sorted_links() do
-@   parent= tree.parent(link)
+@   local parent= tree.parent(link)
 @   if parent==robot.base and not robot.isFloatingBase then
 @       goto skip
 @   end
-@   joint = tree.supportingJoint(link)
-@   jid   = common.jointIdentifier(joint)
-@   idx   = common.spatialVectorIndex(joint)
-@   lid   = common.linkIdentifier(link)
+@   local joint = tree.supportingJoint(link)
+@   local jid   = common.jointIdentifier(joint)
+@   local idx   = common.spatialVectorIndex(joint)
+@   local lid   = common.linkIdentifier(link)
 @   local link_XM_parent = common.link_XM_parent(link, self.members.xt)
 @   local bouncing_from_root = (robot.base == tree.parent(parent))
 @   local link_C_parent = link.name .. '_C_' .. parent.name
+@   local linkHasSiblings = robot.hasSiblings(link)
     //
     // Joint «jid» ...
     //
 @   if bouncing_from_root and not robot.isFloatingBase then
     Acceleration «link_C_parent» = «link_XM_parent».matrix().«mxops.col»(«j0_idx»);
-    Hi(«jid»,«jid») = 1/«D(link)» + «vars.T(link)».«mxops.T»() * («link_C_parent» * «varname_abounce_top(jid)»);
+    Hi(«jid»,«jid») = 1/«D(link)» + «vars.T(link)».«mxops.T»() * («link_C_parent» * «abounce_vars[parent.name][joint.name]»);
 @   else
-    Hi(«jid»,«jid») = 1/«D(link)» + «vars.T(link)».«mxops.T»() * («link_XM_parent» * «varname_abounce(jid)»);
+    Hi(«jid»,«jid») = 1/«D(link)» + «vars.T(link)».«mxops.T»() * («link_XM_parent» * «abounce_vars[parent.name][joint.name]»);
 @   end
-@   local link_j
 @   for j = robot.tree.linkNum(link)+1, robot.tree.nB-1, 1 do
-@       link_j = robot.tree.codeToLink[j]
-@       joint  = tree.supportingJoint(link_j)
-@       jid2   = common.jointIdentifier(joint)
-@       local ab_help = abounce_helper(joint, link_j, link)
-
+@       local link_j = robot.tree.codeToLink[j]
+@       joint = tree.supportingJoint(link_j)
+@       local jid2   = common.jointIdentifier(joint)
+@       local a_bounce_parent = abounce_vars[parent.name][joint.name]
+@       local a_bounce        = abounce_vars[link.name][joint.name]
     //    ... affected by «jid2»
-@       if robot.isFloatingBase then
-@           if ab_help.first_off then
-    Acceleration «ab_help.varname» = «link_XM_parent» * «ab_help.varname_prev»;
-@           else
-    «ab_help.varname» = «link_XM_parent» * «ab_help.varname»;
-@           end
-@       elseif bouncing_from_root then
-    Acceleration «ab_help.varname» = «link_C_parent» * «varname_abounce_top(jid2)»;
-@       elseif ab_help.first_off then
-    Acceleration «ab_help.varname» = «link_XM_parent» * «ab_help.varname_prev»;
+@       if (bouncing_from_root and not robot.isFloatingBase) then
+    Acceleration «a_bounce» = «link_C_parent» * «a_bounce_parent»;
+@       elseif linkHasSiblings then
+    Acceleration «a_bounce» = «link_XM_parent» * «a_bounce_parent»;
 @       else
-    «ab_help.varname» = «link_XM_parent» * «ab_help.varname»;
+    «a_bounce» = «link_XM_parent» * «a_bounce_parent»;
 @       end
 
-    Hi(«jid»,«jid2») = Hi(«jid»,«jid2») + «vars.T(link)».«mxops.T»() * «ab_help.varname»;
+    Hi(«jid»,«jid2») = Hi(«jid»,«jid2») + «vars.T(link)».«mxops.T»() * «a_bounce»;
     Hi(«jid2»,«jid») = Hi(«jid»,«jid2»);
 
-    «ab_help.varname»(«idx») -= Hi(«jid»,«jid2»);  // a_|«lid»  ↶ «jid2»|
+    «a_bounce»(«idx») -= Hi(«jid»,«jid2»);  // a_{«lid» ↶ «jid2»}
 @   end
 @   ::skip::
 @end
@@ -289,54 +285,30 @@ local function fd_generators(robot, configurator, given_env)
 
     local first_link = python.as_attrgetter(robot.movingLinks).values().__iter__().__next__()
     env.first_link = first_link
-    local firstLinkId = env.common.linkIdentifier( first_link )
-    local abounce_vars = {}
-    env.varname_abounce_top = function(jid) return 'a__' .. firstLinkId .. '_' .. jid end
-    env.varname_abounce     = function(jid) return 'a_bounce_' .. jid end
-    local varname_abounce_top = env.varname_abounce_top
-    if robot.isFloatingBase then varname_abounce_top = env.varname_abounce end
-    for i,joint in env.sorted_joints() do
-        local jid = env.common.jointIdentifier(joint)
-        abounce_vars[jid] = {
-            own_chain    = env.varname_abounce(jid),
-            [first_link.name] = varname_abounce_top(jid)
-        }
+
+    local varname_abounce = function(jid, lid) return string.format('a__%s_chain__by_%s', lid, jid) end
+    local aux = {}
+    for jname,_ in env.sorted_joints() do
+        aux[jname] = varname_abounce(jname, first_link.name)
     end
-    env.abounce_helper = function(joint_N, link_N, link_n)
-        local common_ancestor = env.tree.lowestCommonAncestor(link_n, link_N)
-        local same_chain = (common_ancestor==link_n)
-        local first_off = nil
-        local varname = nil
-        local varname_prev = nil
-        local parent_of_link_n = env.tree.parent(link_n)
-        local jid = env.common.jointIdentifier(joint_N)
-        if same_chain then
-            varname = abounce_vars[jid].own_chain
-            abounce_vars[jid][link_n.name] = varname
-        else
-            first_off = (common_ancestor == parent_of_link_n)
-            if first_off then
-                varname = 'a__' .. jid .. '_via_' ..
-                            env.common.linkIdentifier(common_ancestor) .. '_' ..
-                            env.common.linkIdentifier(link_n)
-                varname_prev = abounce_vars[jid][parent_of_link_n.name]
-                --print(link_N, link_n, common_ancestor, varname, varname_prev)
-                --print(parent_of_link_n.name)
-                --for k,v in pairs(abounce_vars[jid]) do print(k,v) end
-            else
-                varname = abounce_vars[jid][parent_of_link_n.name]
+    local abounce_vars = {
+        [first_link.name] = aux
+    }
+    for name, link in env.sorted_links() do
+        if link ~= first_link then
+            aux = {}
+            local parent = robot.treeutils.parent(link)
+            for jname,_ in env.sorted_joints() do
+                if (parent~=first_link or robot.isFloatingBase) and (not robot.hasSiblings(link)) then
+                    aux[jname] = abounce_vars[parent.name][jname]
+                else
+                    aux[jname] = varname_abounce(jname, name)
+                end
             end
-            abounce_vars[jid][link_n.name] = varname
+            abounce_vars[name] = aux
         end
-        --print(link_N, link_n, common_ancestor, same_chain, first_off, varname, varname_prev)
-        return {
-            common_ancestor = common_ancestor,
-            same_chain = same_chain,
-            first_off = first_off,
-            varname = varname,
-            varname_prev = varname_prev
-        }
     end
+    env.abounce_vars = abounce_vars
 
     local tpleval = RCG.utils.templates.tpl_eval
     return {
