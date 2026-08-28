@@ -54,7 +54,8 @@ def main():
     argparser.add_argument('--tests',  dest='tests', action='store_true', help='generate helper test scripts')
     argparser.add_argument('--secret', dest='playground',action='store_true')
 
-    rmtool.setRobotArgs(argparser)
+    rmtgroup = argparser.add_argument_group('Input model loading')
+    rmtool.setRobotArgs(rmtgroup)
 
     cppgroup = argparser.add_argument_group('C++')
     robcogen.cpp.config.add_cmdline_opts(cppgroup)
