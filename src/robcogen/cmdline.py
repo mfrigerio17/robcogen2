@@ -47,7 +47,7 @@ def main():
     argparser.add_argument('-d', '--verbose', dest='verbose', action='store_true', help='lower the logging level to DEBUG (default is WARN)')
     argparser.add_argument('-o', '--output', dest='output', metavar='DIR', help='base output path (defaults to {defa})'.format(defa=robcogen.config.default_config["outdir"]))
 
-    argparser.add_argument('-b', '--floating-base', dest='floating', action='store_true', help='consider the robot as having a floating underactuated base')
+    argparser.add_argument('-f', '--floating-base', dest='floating', action='store_true', help='consider the robot as having a floating underactuated base')
 
     argparser.add_argument('--cpp',    dest='cpp',   action='store_true', help='generate C++ code')
     argparser.add_argument('--octave', dest='octave',action='store_true', help='generate octave code')
@@ -63,10 +63,8 @@ def main():
 
     cfgLogging(logging.DEBUG if args.verbose else logging.WARNING)
 
-    loadopts = {
-        'dropFixedJoints' : True # for URDF only
-    }
-    connectivity, tree, frames, geometry, inertia, params = rmtool.getmodels(args.robot, args.params, **loadopts)[0:6]
+    rmtopts = rmtool.optsDict(args)
+    connectivity, tree, frames, geometry, inertia, params = rmtool.getmodels(args.robot, **rmtopts)[0:6]
     configurator = robcogen.config.Configurator(args)
     core = robcogen.core.Generator(configurator, geometry, inertia, None)
 
