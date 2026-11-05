@@ -28,11 +28,9 @@ fancy::rcg2::InverseDynamics::InverseDynamics(const InertiaProperties& inertia, 
 }
 
 
-void fancy::rcg2::InverseDynamics::InverseDynamics::G_terms(JState_t& tau)
+void fancy::rcg2::InverseDynamics::InverseDynamics::G_terms_pass(JState_t& tau)
 {
-    using namespace iit::rbd;
     // Link 'link1'
-    a_link1 = (xt.m_link1_X_base0.link1_XM_base0()).matrix().col(iit::rbd::LZ) * iit::rbd::g;
     f_link1 = I_link1 * a_link1;
 
     // Link 'link2'
@@ -50,7 +48,6 @@ void fancy::rcg2::InverseDynamics::InverseDynamics::G_terms(JState_t& tau)
     // Link 'link5'
     a_link5 = (xt.m_link5_X_link4.link5_XM_link4()) * a_link4;
     f_link5 = I_link5 * a_link5;
-
 
     secondPass(tau);
 }
@@ -104,7 +101,6 @@ void fancy::rcg2::InverseDynamics::InverseDynamics::firstPass(const JState_t& qd
     using namespace iit::rbd;
     // Link 'link1'
     v_link1(AZ) = qd(jA);   // v_link1 = vJ, for the first link of a fixed base robot
-    a_link1 = xt.m_link1_X_base0.link1_XM_base0().matrix().col(LZ) * iit::rbd::g;
     a_link1(AZ) += qdd(jA);
     f_link1 = I_link1 * a_link1 + vxIv(qd(jA), I_link1) - fext[link1];
 

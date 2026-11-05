@@ -43,7 +43,7 @@ hyq::rcg2::ForwardDynamics::ForwardDynamics(const InertiaProperties& inertia, Tr
 void hyq::rcg2::ForwardDynamics::ForwardDynamics::fd(
     JState_t& qdd,
     Acceleration& a_trunk,
-    const Velocity& v_trunk, const Acceleration& gravity,
+    const Velocity& v_trunk, const GravityVec& gravity,
     const JState_t& qd, const JState_t& tau, const ExtForces& fext)
 {
     using namespace iit::rbd;
@@ -418,6 +418,6 @@ void hyq::rcg2::ForwardDynamics::ForwardDynamics::fd(
 
 
     // + Add gravity to the acceleration of the floating base
-    a_trunk += gravity;
+    linearPart(a_trunk) += gravity.value;
 }
 

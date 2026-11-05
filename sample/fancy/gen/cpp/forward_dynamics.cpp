@@ -26,7 +26,7 @@ fancy::rcg2::ForwardDynamics::ForwardDynamics(const InertiaProperties& inertia, 
 
 
 
-void fancy::rcg2::ForwardDynamics::ForwardDynamics::fd(
+void fancy::rcg2::ForwardDynamics::ForwardDynamics::solve(
     JState_t& qdd,
     const JState_t& qd, const JState_t& tau, const ExtForces& fext)
 {
@@ -161,7 +161,8 @@ void fancy::rcg2::ForwardDynamics::ForwardDynamics::fd(
 
 
 // ---------------------- THIRD PASS ---------------------- //
-    a_link1 = xt.m_link1_X_base0.link1_XM_base0().matrix().col(LZ) * iit::rbd::g;
+    // 'a_link1' is expected to be pre-computed elsewhere, from gravity
+
     qdd(jA) = (link1_u - link1_U.dot(a_link1)) / link1_D;
     a_link1(AZ) += qdd(jA);
 

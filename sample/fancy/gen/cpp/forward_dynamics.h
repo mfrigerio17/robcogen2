@@ -69,7 +69,49 @@ struct ForwardDynamics
     void fd(
         JState_t& qdd,
         const JState_t& qd, const JState_t& tau,
-        const ExtForces& fext = zeroExtForces);
+        const ExtForces& fext = zeroExtForces)
+    {
+        link1_gravity(-iit::rbd::g);
+        solve(qdd, qd, tau, fext);
+    }
+
+    void fd(
+        JState_t& qdd,
+        const JState_t& q, const JState_t& qd, const JState_t& tau,
+        const Scalar& gravity,
+        const ExtForces& fext = zeroExtForces)
+    {
+        setJointStatus(q);
+        fd(qdd, qd, tau, gravity, fext);
+    }
+    void fd(
+        JState_t& qdd,
+        const JState_t& qd, const JState_t& tau,
+        const Scalar& gravity,
+        const ExtForces& fext = zeroExtForces)
+    {
+        link1_gravity(gravity);
+        solve(qdd, qd, tau, fext);
+    }
+
+    void fd(
+        JState_t& qdd,
+        const JState_t& q, const JState_t& qd, const JState_t& tau,
+        const GravityVec& gravity,
+        const ExtForces& fext = zeroExtForces)
+    {
+        setJointStatus(q);
+        fd(qdd, qd, tau, gravity, fext);
+    }
+    void fd(
+        JState_t& qdd,
+        const JState_t& qd, const JState_t& tau,
+        const GravityVec& gravity,
+        const ExtForces& fext = zeroExtForces)
+    {
+        link1_gravity(gravity);
+        solve(qdd, qd, tau, fext);
+    }
     ///@}
 
     //void jsim_inverse(const JointState&, Hinv_t&);
@@ -141,7 +183,19 @@ public:
     Scalar link5_D;
     Scalar link5_u;
 
+protected:
+    void link1_gravity(const Scalar& g) {
+        iit::rbd::angularPart(a_link1).setZero();
+        iit::rbd::linearPart(a_link1) = xt.m_link1_X_base0.A_rotmx_B().col(iit::rbd::Z) * (-g);
+    }
+    void link1_gravity(const GravityVec& g) {
+        iit::rbd::angularPart(a_link1).setZero();
+        iit::rbd::linearPart(a_link1) = xt.m_link1_X_base0.A_rotmx_B() * (-g.value);
+    }
 
+    void solve(JState_t& qdd,
+        const JState_t& qd, const JState_t& tau,
+        const ExtForces& fext);
 
 private:
     static const ExtForces zeroExtForces;

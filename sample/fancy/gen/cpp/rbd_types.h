@@ -24,6 +24,7 @@ using Matrix = iit::rbd::PlainMatrix<Scalar, R, C>;
 
 using InertiaMatrix = iit::rbd::InertiaMat<Scalar>;
 
+using GravityVec = iit::rbd::GravityVec<Scalar>;
 
 }
 }

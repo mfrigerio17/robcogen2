@@ -71,12 +71,53 @@ struct InverseDynamics
         setJointStatus(q);
         id(tau, qd, qdd, fext);
     }
-
     void id(
         JState_t& tau,
         const JState_t& qd, const JState_t& qdd,
         const ExtForces& fext = zeroExtForces)
     {
+        link1_gravity(-iit::rbd::g);
+        firstPass(qd, qdd, fext);
+        secondPass(tau);
+    }
+
+    void id(
+        JState_t& tau,
+        const JState_t& q, const JState_t& qd, const JState_t& qdd,
+        const Scalar& gravity,
+        const ExtForces& fext = zeroExtForces)
+    {
+        setJointStatus(q);
+        id(tau, qd, qdd, gravity, fext);
+    }
+    void id(
+        JState_t& tau,
+        const JState_t& qd, const JState_t& qdd,
+        const Scalar& gravity,
+        const ExtForces& fext = zeroExtForces)
+    {
+        link1_gravity(gravity);
+        firstPass(qd, qdd, fext);
+        secondPass(tau);
+    }
+
+
+    void id(
+        JState_t& tau,
+        const JState_t& q, const JState_t& qd, const JState_t& qdd,
+        const GravityVec& gravity,
+        const ExtForces& fext = zeroExtForces)
+    {
+        setJointStatus(q);
+        id(tau, qd, qdd, gravity, fext);
+    }
+    void id(
+        JState_t& tau,
+        const JState_t& qd, const JState_t& qdd,
+        const GravityVec& gravity,
+        const ExtForces& fext = zeroExtForces)
+    {
+        link1_gravity(gravity);
         firstPass(qd, qdd, fext);
         secondPass(tau);
     }
@@ -87,11 +128,23 @@ struct InverseDynamics
      * for the effect of gravity, in a specific configuration.
      */
     ///@{
-    void G_terms(JState_t& tau, const JState_t& q) {
+    void G_terms(JState_t& tau, const JState_t& q, const Scalar& gravity=-iit::rbd::g) {
         setJointStatus(q);
-        G_terms(tau);
+        G_terms(tau, gravity);
     }
-    void G_terms(JState_t& tau);
+    void G_terms(JState_t& tau, const Scalar& gravity=-iit::rbd::g) {
+        link1_gravity(gravity);
+        G_terms_pass(tau);
+    }
+    void G_terms(JState_t& tau, const JState_t& q, const GravityVec& gravity) {
+        setJointStatus(q);
+        G_terms(tau, gravity);
+    }
+    void G_terms(JState_t& tau, const GravityVec& gravity) {
+        link1_gravity(gravity);
+        G_terms_pass(tau);
+    }
+
     ///@}
 
     /** \name Centrifugal and Coriolis terms
@@ -161,6 +214,17 @@ struct InverseDynamics
 protected:
     void firstPass(const JState_t& qd, const JState_t& qdd, const ExtForces& fext);
     void secondPass(JState_t& tau);
+
+    void G_terms_pass(JState_t& tau);
+
+    void link1_gravity(const Scalar& g) {
+        iit::rbd::angularPart(a_link1).setZero();
+        iit::rbd::linearPart(a_link1) = xt.m_link1_X_base0.A_rotmx_B().col(iit::rbd::Z) * (-g);
+    }
+    void link1_gravity(const GravityVec& g) {
+        iit::rbd::angularPart(a_link1).setZero();
+        iit::rbd::linearPart(a_link1) = xt.m_link1_X_base0.A_rotmx_B() * (-g.value);
+    }
 
 private:
     Transforms& xt;

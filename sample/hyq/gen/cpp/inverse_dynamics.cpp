@@ -49,11 +49,12 @@ hyq::rcg2::InverseDynamics::InverseDynamics(const InertiaProperties& inertia, Tr
 
 
 void hyq::rcg2::InverseDynamics::InverseDynamics::G_terms_fully_actuated(Force& base_f, JState_t& tau,
-        const Acceleration& gravity)
+        const GravityVec& gravity)
 {
     using namespace iit::rbd;
-    const Acceleration a_trunk{-gravity};
-    f_trunk = I_trunk * a_trunk;
+    Acceleration a_trunk;
+    a_trunk << Vector3::Zero(), -gravity.value;
+    f_trunk = I_trunk.block<6,3>(0,LX) * (-gravity.value);
 
     // Link 'LF_hipassembly'
     a_LF_hipassembly = (xt.m_LF_hipassembly_X_trunk.LF_hipassembly_XM_trunk()) * a_trunk;
@@ -220,12 +221,13 @@ void hyq::rcg2::InverseDynamics::InverseDynamics::C_terms_fully_actuated(Force& 
 
 void hyq::rcg2::InverseDynamics::InverseDynamics::id_fully_actuated(
     Force& base_f, JState_t& tau,
-    const Acceleration& gravity, const Velocity& v_trunk, const Acceleration& base_a,
+    const GravityVec& gravity, const Velocity& v_trunk, const Acceleration& base_a,
     const JState_t& qd, const JState_t& qdd,
     const ExtForces& fext /*= zeroExtForces*/)
 {
     using namespace iit::rbd;
-    Acceleration a_trunk = base_a - gravity;
+    Acceleration a_trunk = base_a;
+    linearPart(a_trunk) -= gravity.value;
     f_trunk = I_trunk * a_trunk + vxIv(v_trunk, I_trunk) - fext[trunk];
 
     // Link 'LF_hipassembly'
@@ -424,7 +426,7 @@ void hyq::rcg2::InverseDynamics::InverseDynamics::sweep_inwards_fully_actuated(J
 
 void hyq::rcg2::InverseDynamics::InverseDynamics::id(
     JState_t& tau, Acceleration& a_trunk,
-    const Acceleration& gravity, const Velocity& v_trunk,
+    const GravityVec& gravity, const Velocity& v_trunk,
     const JState_t& qd, const JState_t& qdd,
     const ExtForces& fext /*= zeroExtForces*/)
 {
@@ -686,6 +688,6 @@ void hyq::rcg2::InverseDynamics::InverseDynamics::id(
     tau(RH_KFE) = (Ic_RH_lowerleg.row(AZ) * a_RH_lowerleg + f_RH_lowerleg(AZ));
 
 
-    a_trunk += gravity;
+    linearPart(a_trunk) += gravity.value;
 }
 

@@ -65,7 +65,7 @@ struct ForwardDynamics
      */
     void fd(
        JState_t& qdd, Acceleration& a_trunk,
-       const Velocity& v_trunk, const Acceleration& gravity,
+       const Velocity& v_trunk, const GravityVec& gravity,
        const JState_t& q, const JState_t& qd, const JState_t& tau,
        const ExtForces& fext = zeroExtForces)
     {
@@ -75,7 +75,7 @@ struct ForwardDynamics
     }
     void fd(
        JState_t& qdd, Acceleration& a_trunk,
-       const Velocity& v_trunk, const Acceleration& gravity,
+       const Velocity& v_trunk, const GravityVec& gravity,
        const JState_t& qd, const JState_t& tau,
        const ExtForces& fext = zeroExtForces);
     ///@}

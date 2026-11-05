@@ -71,7 +71,7 @@ struct InverseDynamics
      */ ///@{
     void id(
         JState_t& tau, Acceleration& a_trunk,
-        const Acceleration& gravity, const Velocity& v_trunk,
+        const GravityVec& gravity, const Velocity& v_trunk,
         const JState_t& q, const JState_t& qd, const JState_t& qdd,
         const ExtForces& fext = zeroExtForces)
     {
@@ -80,7 +80,7 @@ struct InverseDynamics
     }
     void id(
         JState_t& tau, Acceleration& a_trunk,
-        const Acceleration& gravity, const Velocity& v_trunk,
+        const GravityVec& gravity, const Velocity& v_trunk,
         const JState_t& qd, const JState_t& qdd,
         const ExtForces& fext = zeroExtForces);
     ///@}
@@ -106,7 +106,7 @@ struct InverseDynamics
      */ ///@{
     void id_fully_actuated(
         Force& base_f, JState_t& tau,
-        const Acceleration& gravity, const Velocity& v_trunk, const Acceleration& base_a,
+        const GravityVec& gravity, const Velocity& v_trunk, const Acceleration& base_a,
         const JState_t& q, const JState_t& qd, const JState_t& qdd,
         const ExtForces& fext = zeroExtForces)
     {
@@ -116,7 +116,7 @@ struct InverseDynamics
     }
     void id_fully_actuated(
         Force& base_f, JState_t& tau,
-        const Acceleration& gravity, const Velocity& v_trunk, const Acceleration& base_a,
+        const GravityVec& gravity, const Velocity& v_trunk, const Acceleration& base_a,
         const JState_t& qd, const JState_t& qdd,
         const ExtForces& fext = zeroExtForces);
     ///@}
@@ -126,14 +126,14 @@ struct InverseDynamics
     ///@{
     void G_terms_fully_actuated(
         Force& base_f, JState_t& tau,
-        const Acceleration& gravity, const JState_t& q)
+        const GravityVec& gravity, const JState_t& q)
     {
         setJointStatus(q);
         G_terms_fully_actuated(base_f, tau, gravity);
     }
     void G_terms_fully_actuated(
         Force& base_f, JState_t& tau,
-        const Acceleration& gravity);
+        const GravityVec& gravity);
     ///@}
 
     /** \name Centrifugal and Coriolis terms, fully actuated base
