@@ -155,14 +155,18 @@ struct Transforms
 
     void update(const state_t&);
 
+protected:
+    Parameters parameters;
+
+public:
+
     link1_X_base0 m_link1_X_base0;
     link2_X_link1 m_link2_X_link1;
     link3_X_link2 m_link3_X_link2;
     link4_X_link3 m_link4_X_link3;
     link5_X_link4 m_link5_X_link4;
 
-protected:
-    Parameters parameters;
+
 };
 
 

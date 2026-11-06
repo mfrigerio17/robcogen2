@@ -160,12 +160,12 @@ const typename fancy::rcg2::link5_X_link4& fancy::rcg2::link5_X_link4::update(co
 
 
 fancy::rcg2::Transforms::Transforms(const ModelParameters& initial) :
-m_link1_X_base0(),m_link2_X_link1(parameters),m_link3_X_link2(),m_link4_X_link3(),m_link5_X_link4(), parameters(initial)
+parameters(initial), m_link1_X_base0(),m_link2_X_link1(parameters),m_link3_X_link2(),m_link4_X_link3(),m_link5_X_link4()
 {}
 
 
 fancy::rcg2::Transforms::Transforms() :
-m_link1_X_base0(),m_link2_X_link1(parameters),m_link3_X_link2(),m_link4_X_link3(),m_link5_X_link4(), parameters(/*do we want the default instance of ModelParameters ?*/)
+parameters(/*do we want the default instance of ModelParameters ?*/),m_link1_X_base0(),m_link2_X_link1(parameters),m_link3_X_link2(),m_link4_X_link3(),m_link5_X_link4()
 {}
 
 
