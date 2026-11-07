@@ -29,6 +29,7 @@ using Matrix66     = typename TypesGen«tpl.suffix»::Matrix66;       \
 using Column6      = typename TypesGen«tpl.suffix»::Column6D;        \
 using «types.vec3» = typename TypesGen«tpl.suffix»::Vector3; \
 using InertiaMatrix= «rbdns»::InertiaMat«tpl.suffix»;
+using GravityVec   = «rbdns»::GravityVec«tpl.suffix»;
 
 @   else
 typedef typename «rbdns»::DoubleTraits «types.scalarTraits»;
@@ -46,6 +47,7 @@ template<int R, int C>
 using Matrix = «rbdns»::PlainMatrix<«types.scalar», R, C>;
 
 using InertiaMatrix = «rbdns»::InertiaMat<«types.scalar»>;
+using GravityVec    = «rbdns»::GravityVec<«types.scalar»>;
 
 @end
 

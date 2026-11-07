@@ -170,39 +170,90 @@ struct «self.class»
      * \param[in] «self.params.q» the joint position vector
      * \param[in] «self.params.qd» the joint velocity vector
      * \param[in] «self.params.qdd» the desired joint acceleration vector
+     * \param[in] «self.params.g» the optional gravitational acceleration; can be either
+     *  a scalar or a 3d vector. In the first case, the argument is the signed magnitude of gravity,
+     *  which is assumed directed along the Z axis of the base.
+     *  In the second case, it is the coordinate vector representing gravity, in coordinates
+     *  of the base frame. When not given, gravity defaults to the scalar -9.81, which is
+     *  the regular Earth acceleration towards the negative Z axis of the base (the corresponding
+     *  3D coordinate vector would be (0.0, 0.0, -9.81) ).
      * \param[in] «self.fparam.fext» the external forces acting on the links; this parameters
      *            defaults to zero
      */
     ///@{
-    void id(
-        «self.fparam.tau»,
+    void id( «self.fparam.tau»,
         «self.fparam.q», «self.fparam.qd», «self.fparam.qdd»,
         «self.fparam.fext» = zeroExtForces)
     {
         setJointStatus(«self.params.q»);
         id(«self.params.tau», «self.params.qd», «self.params.qdd», «self.params.fext»);
     }
-
-    void id(
-        «self.fparam.tau»,
+    void id( «self.fparam.tau»,
         «self.fparam.qd», «self.fparam.qdd»,
         «self.fparam.fext» = zeroExtForces)
     {
+        «link1.name»_gravity(-«ns_iit_rbd.qualifier»::g);
+        firstPass(«self.params.qd», «self.params.qdd», «self.params.fext»);
+        secondPass(«self.params.tau»);
+    }
+
+    void id( «self.fparam.tau»,
+        «self.fparam.q», «self.fparam.qd», «self.fparam.qdd»,
+        «self.fparam.scalarg»,  «self.fparam.fext» = zeroExtForces)
+    {
+        setJointStatus(«self.params.q»);
+        id(«self.params.tau», «self.params.qd», «self.params.qdd», «self.params.g», «self.params.fext»);
+    }
+    void id( «self.fparam.tau»,
+        «self.fparam.qd», «self.fparam.qdd»,
+        «self.fparam.scalarg»,  «self.fparam.fext» = zeroExtForces)
+    {
+        «link1.name»_gravity(«self.params.g»);
+        firstPass(«self.params.qd», «self.params.qdd», «self.params.fext»);
+        secondPass(«self.params.tau»);
+    }
+
+    void id( «self.fparam.tau»,
+        «self.fparam.q», «self.fparam.qd», «self.fparam.qdd»,
+        «self.fparam.g»,  «self.fparam.fext» = zeroExtForces)
+    {
+        setJointStatus(«self.params.q»);
+        id(«self.params.tau», «self.params.qd», «self.params.qdd», «self.params.g», «self.params.fext»);
+    }
+    void id( «self.fparam.tau»,
+        «self.fparam.qd», «self.fparam.qdd»,
+        «self.fparam.g»,  «self.fparam.fext» = zeroExtForces)
+    {
+        «link1.name»_gravity(«self.params.g»);
         firstPass(«self.params.qd», «self.params.qdd», «self.params.fext»);
         secondPass(«self.params.tau»);
     }
     ///@}
 
     /** \name Gravity terms
-     * The joint forces (linear or rotational) required to compensate
-     * for the effect of gravity, in a specific configuration.
+     * The joint forces (linear or rotational) equal and opposite to the
+     * gravity terms, in a specific configuration.
+     * See \c id(..) for a description of the parameters, in particular
+     * for the gravity.
      */
     ///@{
-    void G_terms(«self.fparam.tau», «self.fparam.q») {
+    void G_terms(«self.fparam.tau», «self.fparam.q», «self.fparam.scalarg»= -«ns_iit_rbd.qualifier»::g) {
         setJointStatus(«self.params.q»);
-        G_terms(«self.params.tau»);
+        G_terms(«self.params.tau», «self.params.g»);
     }
-    void G_terms(«self.fparam.tau»);
+    void G_terms(«self.fparam.tau», «self.fparam.scalarg»= -«ns_iit_rbd.qualifier»::g) {
+        «link1.name»_gravity(«self.params.g»);
+        compute_G(«self.params.tau»);
+    }
+
+    void G_terms(«self.fparam.tau», «self.fparam.q», «self.fparam.g») {
+        setJointStatus(«self.params.q»);
+        G_terms(«self.params.tau», «self.params.g»);
+    }
+    void G_terms(«self.fparam.tau», «self.fparam.g») {
+        «link1.name»_gravity(«self.params.g»);
+        compute_G(«self.params.tau»);
+    }
     ///@}
 
     /** \name Centrifugal and Coriolis terms
@@ -269,6 +320,19 @@ protected:
 @ else
     void firstPass(«self.fparam.qd», «self.fparam.qdd», «self.fparam.fext»);
     void secondPass(«self.fparam.tau»);
+
+    void compute_G(«self.fparam.tau»);
+
+@   local ct  = common.link_CT_parent(link1, self.members.xt)
+    void «link1.name»_gravity(const Scalar& g) {
+        «ns_iit_rbd.qualifier»::angularPart(«vars.acc(link1)»).setZero();
+        «ns_iit_rbd.qualifier»::linearPart(«vars.acc(link1)») = «ct».A_rotmx_B().col(«ns_iit_rbd.qualifier»::Z) * (-g);
+    }
+    void «link1.name»_gravity(const GravityVec& g) {
+        «ns_iit_rbd.qualifier»::angularPart(«vars.acc(link1)»).setZero();
+        «ns_iit_rbd.qualifier»::linearPart(«vars.acc(link1)») = «ct».A_rotmx_B() * (-g.value);
+    }
+
 @ end
 
 private:
@@ -336,7 +400,7 @@ ${fixed_base_methods_definitions}
 local fixed_base_methods_definitions = [[
 @local qualifier = ns.qualifier .. '::' .. tpl.class.in_qualifier
 «tpl.heading»
-void «qualifier»::«self.class»::G_terms(«self.fparam.tau»)
+void «qualifier»::«self.class»::compute_G(«self.fparam.tau»)
 {
     using namespace «ns_iit_rbd.qualifier»;
     ${fixed_base_pass1_G}
@@ -391,10 +455,10 @@ motionCrossProductMx<«types.scalar»>(«velocity», vcross);
 
 «vars.force(link)» = «vars.I(link)» * «acceler» + vxIv(«velocity», «vars.I(link)») - «self.params.fext»[«common.linkIdentifier(link)»];
 @   --
-@   elseif not robot.isFloatingBase then -- parent IS the fixed-base
+@   elseif not robot.isFloatingBase then -- parent IS the FIXED-base -- ASSERT(link == link1)
 @   --
 «velocity»(«idx») = «self.params.qd»(«jid»);   // «velocity» = vJ, for the first link of a fixed base robot
-«acceler» = «child_X_parent».matrix().col(LZ) * «ns_iit_rbd.qualifier»::g;
+//«acceler» is expected to be pre-computed
 «acceler»(«idx») += «self.params.qdd»(«jid»);
 @       if joint.kind == RCG.enums.JointKind.prismatic then
 // The first joint is prismatic, no centripetal terms.
@@ -437,8 +501,8 @@ local fixed_base_pass1_G = [[
 // Link '«name»'
 @   local parent   = robot.treeutils.parent(link)
 @   local child_X_parent = common.link_XM_parent(link, self.members.xt)
-@   if (parent == robot.base) and not robot.isFloatingBase then
-«vars.acc(link)» = («child_X_parent»).matrix().col(«ns_iit_rbd.qualifier»::LZ) * «ns_iit_rbd.qualifier»::g;
+@   if (parent == robot.base) and not robot.isFloatingBase then -- ASSERT(link == link1)
+//«vars.acc(link)» is expected to be pre-computed
 @   else
 «vars.acc(link)» = («child_X_parent») * «vars.acc(parent)»;
 @   end
@@ -491,8 +555,10 @@ void «qualifier»::«self.class»::G_terms_fully_actuated(«self.fparam.basef»
         «self.fparam.g»)
 {
     using namespace «ns_iit_rbd.qualifier»;
-    const Acceleration «vars.acc(robot.base)»{-«self.params.g»};
-    «vars.force(robot.base)» = «vars.I(robot.base)» * «vars.acc(robot.base)»;
+    Acceleration «vars.acc(robot.base)»;
+    linearPart («vars.acc(robot.base)»).setZero();
+    angularPart(«vars.acc(robot.base)») = - «self.params.g».value;
+    «vars.force(robot.base)» = «vars.I(robot.base)».block<6,3>(0,LX) * (- «self.params.g».value);
 
     ${fixed_base_pass1_G}
 
@@ -588,7 +654,7 @@ void «qualifier»::«self.class»::id(
 
 @end
 
-    «vars.acc(robot.base)» += «self.params.g»;
+    linearPart(«vars.acc(robot.base)») += «self.params.g».value;
 }
 ]]
 
@@ -617,7 +683,8 @@ local function generators_inverse_dynamics(robot, configurator, given_env)
         basea = "Acceleration& " .. self.params.basea,
         basea_in = "const Acceleration& " .. self.params.basea_in,
         basef = "Force& " .. self.params.basef,
-        g = "const Acceleration& " .. self.params.g,
+        g = "const GravityVec& " .. self.params.g,
+        scalarg= "const "..env.types.scalar.."& " .. self.params.g,
         fext = "const " .. self.local_types.fext .. "& " .. self.params.fext,
     }
     env.self = self
@@ -626,6 +693,9 @@ local function generators_inverse_dynamics(robot, configurator, given_env)
     env.D = function(link) return 'D_' .. link.name end
     env.child_mx_parent = function(link)
         return env.common.link_XM_parent(link, self.members.xt)
+    end
+    if not robot.isFloatingBase then
+        env.link1 = robot.tree.codeToLink[1] -- the first (and only) child of the fixed base
     end
 
     local tpleval = RCG.utils.templates.tpl_eval
