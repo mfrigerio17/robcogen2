@@ -85,18 +85,50 @@ struct «self.class»
        «self.fparam.qd», «self.fparam.tau»,
        «self.fparam.fext» = zeroExtForces);
 @else
-    void fd(
-        «self.fparam.qdd»,
+    void fd( «self.fparam.qdd»,
         «self.fparam.q», «self.fparam.qd», «self.fparam.tau»,
         «self.fparam.fext» = zeroExtForces)
     {
         setJointStatus(q);
         fd(«self.params.qdd», «self.params.qd», «self.params.tau», «self.params.fext»);
     }
-    void fd(
-        «self.fparam.qdd»,
+    void fd( «self.fparam.qdd»,
         «self.fparam.qd», «self.fparam.tau»,
-        «self.fparam.fext» = zeroExtForces);
+        «self.fparam.fext» = zeroExtForces)
+    {
+        «link1.name»_gravity(- «ns_iit_rbd.qualifier»::g);
+        solve(«self.params.qdd», «self.params.qd», «self.params.tau», «self.params.fext»);
+    }
+
+    void fd( «self.fparam.qdd»,
+        «self.fparam.q», «self.fparam.qd», «self.fparam.tau»,
+        «self.fparam.scalarg», «self.fparam.fext» = zeroExtForces)
+    {
+        setJointStatus(q);
+        fd(«self.params.qdd», «self.params.qd», «self.params.tau», «self.params.g», «self.params.fext»);
+    }
+    void fd( «self.fparam.qdd»,
+        «self.fparam.qd», «self.fparam.tau»,
+        «self.fparam.scalarg», «self.fparam.fext» = zeroExtForces)
+    {
+        «link1.name»_gravity(«self.params.g»);
+        solve(«self.params.qdd», «self.params.qd», «self.params.tau», «self.params.fext»);
+    }
+
+    void fd( «self.fparam.qdd»,
+        «self.fparam.q», «self.fparam.qd», «self.fparam.tau»,
+        «self.fparam.g», «self.fparam.fext» = zeroExtForces)
+    {
+        setJointStatus(q);
+        fd(«self.params.qdd», «self.params.qd», «self.params.tau», «self.params.g», «self.params.fext»);
+    }
+    void fd( «self.fparam.qdd»,
+        «self.fparam.qd», «self.fparam.tau»,
+        «self.fparam.g», «self.fparam.fext» = zeroExtForces)
+    {
+        «link1.name»_gravity(«self.params.g»);
+        solve(«self.params.qdd», «self.params.qd», «self.params.tau», «self.params.fext»);
+    }
 @end
     ///@}
 
@@ -145,6 +177,22 @@ public:
     Force    «vars.biasF(robot.base)»;
 @end
 
+@if not robot.isFloatingBase then
+protected:
+@   local ct  = common.link_CT_parent(link1, self.members.xt)
+    void «link1.name»_gravity(const Scalar& g) {
+        «ns_iit_rbd.qualifier»::angularPart(«vars.acc(link1)»).setZero();
+        «ns_iit_rbd.qualifier»::linearPart(«vars.acc(link1)») = «ct».A_rotmx_B().col(«ns_iit_rbd.qualifier»::Z) * (-g);
+    }
+    void «link1.name»_gravity(const GravityVec& g) {
+        «ns_iit_rbd.qualifier»::angularPart(«vars.acc(link1)»).setZero();
+        «ns_iit_rbd.qualifier»::linearPart(«vars.acc(link1)») = «ct».A_rotmx_B() * (-g.value);
+    }
+
+    void solve(«self.fparam.qdd»,
+        «self.fparam.qd», «self.fparam.tau»,
+        «self.fparam.fext»);
+@end
 
 private:
     static const «self.local_types.fext» zeroExtForces;
@@ -190,11 +238,14 @@ const typename «qualifier»::«self.local_types.fext»
 
 «tpl.heading»
 
+@if robot.isFloatingBase then
 void «qualifier»::«self.class»::fd(
     «self.fparam.qdd»,
-@if robot.isFloatingBase then
     «self.fparam.basea»,
     «self.fparam.basev», «self.fparam.g»,
+@else
+void «qualifier»::«self.class»::solve(
+    «self.fparam.qdd»,
 @end
     «self.fparam.qd», «self.fparam.tau», «self.fparam.fext»)
 {
@@ -298,7 +349,7 @@ void «qualifier»::«self.class»::fd(
 @   local jid    = common.jointIdentifier(joint)
 @   local acc    = vars.acc(link)
 @   if (parent==robot.base and not robot.isFloatingBase) then
-    «acc» = «common.link_XM_parent(link, self.members.xt)».matrix().col(LZ) * «ns_iit_rbd.qualifier»::g;
+    //«acc» is expected to be pre-computed
 @   else
     «acc» = «common.link_XM_parent(link, self.members.xt)» * «vars.acc(parent)» + «vars.biasA(link)»;
 @   end
@@ -309,7 +360,7 @@ void «qualifier»::«self.class»::fd(
 
 @if robot.isFloatingBase then
     // + Add gravity to the acceleration of the floating base
-    «vars.acc(robot.base)» += «self.params.g»;
+    linearPart(«vars.acc(robot.base)») += «self.params.g».value;
 @end
 }
 
@@ -346,7 +397,8 @@ local function fd_generators(robot, configurator, given_env)
         basea = "Acceleration& " .. self.params.basea,
         basea_in = "const Acceleration& " .. self.params.basea_in,
         basef = "Force& " .. self.params.basef,
-        g = "const Acceleration& " .. self.params.g,
+        g = "const GravityVec& " .. self.params.g,
+        scalarg= "const "..env.types.scalar.."& " .. self.params.g,
         fext = "const " .. self.local_types.fext .. "& " .. self.params.fext,
     }
     env.self = self
@@ -359,6 +411,9 @@ local function fd_generators(robot, configurator, given_env)
     env.DTermName = function(link) return link.name..'_D' end
     env.child_mx_parent = function(link)
         return env.common.link_XM_parent(link, self.members.xt)
+    end
+    if not robot.isFloatingBase then
+        env.link1 = robot.tree.codeToLink[1] -- the first (and only) child of the fixed base
     end
 
     local tpleval = RCG.utils.templates.tpl_eval

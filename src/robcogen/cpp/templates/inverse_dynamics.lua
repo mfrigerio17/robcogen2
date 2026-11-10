@@ -556,8 +556,8 @@ void «qualifier»::«self.class»::G_terms_fully_actuated(«self.fparam.basef»
 {
     using namespace «ns_iit_rbd.qualifier»;
     Acceleration «vars.acc(robot.base)»;
-    linearPart («vars.acc(robot.base)»).setZero();
-    angularPart(«vars.acc(robot.base)») = - «self.params.g».value;
+    angularPart («vars.acc(robot.base)»).setZero();
+    linearPart(«vars.acc(robot.base)») = - «self.params.g».value;
     «vars.force(robot.base)» = «vars.I(robot.base)».block<6,3>(0,LX) * (- «self.params.g».value);
 
     ${fixed_base_pass1_G}
@@ -588,7 +588,8 @@ void «qualifier»::«self.class»::id_fully_actuated(
     «self.fparam.fext» /*= zeroExtForces*/)
 {
     using namespace «ns_iit_rbd.qualifier»;
-    Acceleration «vars.acc(robot.base)» = «self.params.basea_in» - «self.params.g»;
+    Acceleration «vars.acc(robot.base)» = «self.params.basea_in»;
+    linearPart(«vars.acc(robot.base)») -= «self.params.g».value;
     «vars.force(robot.base)» = «vars.I(robot.base)» * «vars.acc(robot.base)» + vxIv(«self.params.basev», «vars.I(robot.base)») - «self.params.fext»[«common.linkIdentifier(robot.base)»];
 
     ${fb_pass1_fully_actuated}
